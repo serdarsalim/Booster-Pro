@@ -5,14 +5,7 @@
   "version": "2.0.0",
   "permissions": [
     "contextMenus",
-    "activeTab",
-    "tabs",
-    "clipboardRead",
-    "clipboardWrite",
     "storage"
-  ],
-  "host_permissions": [
-    "<all_urls>"
   ],
   "background": {
     "service_worker": "background/sw.js",
