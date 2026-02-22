@@ -31,69 +31,7 @@
       </section>
 
       <section class="engine-panel">
-        <div class="engine-columns">
-          <div class="engine-col">
-            <h3 id="header-ai">AI</h3>
-            <div id="ai-engines" class="engine-list"></div>
-          </div>
-
-          <div class="engine-col">
-            <h3 id="header-web">Web</h3>
-            <div id="web-engines" class="engine-list"></div>
-          </div>
-
-          <div class="engine-col">
-            <h3 id="header-utilities">Utilities</h3>
-            <div id="utilities-engines" class="engine-list"></div>
-          </div>
-
-          <div class="engine-col">
-            <h3 id="header-shopping">Shopping</h3>
-            <div id="shopping-engines" class="engine-list"></div>
-          </div>
-
-          <div class="engine-col">
-            <h3 id="header-news">News</h3>
-            <div id="news-engines" class="engine-list"></div>
-          </div>
-
-          <div class="engine-col">
-            <h3 id="header-tech">Tech</h3>
-            <div id="tech-engines" class="engine-list"></div>
-          </div>
-
-          <div class="engine-col">
-            <h3 id="header-social">Social Media</h3>
-            <div id="social-engines" class="engine-list"></div>
-          </div>
-
-          <div class="engine-col">
-            <h3 id="header-productivity">Productivity</h3>
-            <div id="productivity-engines" class="engine-list"></div>
-          </div>
-
-          <div class="engine-col">
-            <h3 id="header-research">Research</h3>
-            <div id="research-engines" class="engine-list"></div>
-          </div>
-        </div>
-      </section>
-
-      <section class="custom-row">
-        <input id="custom-name" type="text" placeholder="Engine name">
-        <input id="custom-url" type="text" placeholder="Search URL with %s">
-        <select id="custom-category">
-          <option value="AI">AI</option>
-          <option value="Web">Web</option>
-          <option value="Tech">Tech</option>
-          <option value="Shopping">Shopping</option>
-          <option value="News">News</option>
-          <option value="Research">Research</option>
-          <option value="Social">Social</option>
-          <option value="Productivity">Productivity</option>
-          <option value="Utilities">Utilities</option>
-        </select>
-        <button id="add-custom" class="primary" type="button">Add</button>
+        <div id="engine-columns" class="engine-columns" aria-live="polite"></div>
       </section>
     </section>
 
@@ -127,6 +65,45 @@
       </section>
     </section>
   </main>
+
+  <div id="add-more-modal" class="modal-backdrop" hidden>
+    <section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="add-more-title">
+      <header class="modal-header">
+        <h2 id="add-more-title">Add More Engines</h2>
+        <button id="add-more-close" class="icon-ghost" type="button" aria-label="Close add engines dialog">&times;</button>
+      </header>
+      <p id="add-more-subtitle" class="modal-subtitle"></p>
+
+      <section class="modal-section">
+        <h3>Manual</h3>
+        <div class="modal-grid">
+          <input id="manual-engine-name" type="text" placeholder="Engine name">
+          <input id="manual-engine-url" type="text" placeholder="Search URL with %s">
+          <select id="manual-engine-category">
+            <option value="AI">AI</option>
+            <option value="Web">Web</option>
+            <option value="Tech">Tech</option>
+            <option value="Shopping">Shopping</option>
+            <option value="News">News</option>
+            <option value="Research">Research</option>
+            <option value="Social">Social</option>
+            <option value="Productivity">Productivity</option>
+            <option value="Utilities">Utilities</option>
+          </select>
+          <button id="add-manual-engine" class="primary" type="button">Add Manual Engine</button>
+        </div>
+      </section>
+
+      <section class="modal-section">
+        <h3>Engine List</h3>
+        <div class="modal-grid">
+          <input id="shared-search-input" type="text" placeholder="Filter engine list">
+          <select id="shared-engine-select" size="10"></select>
+          <button id="add-shared-engine" class="primary" type="button">Add Selected Engine</button>
+        </div>
+      </section>
+    </section>
+  </div>
 
   <script type="module" src="./command-center.js"></script>
 </body>

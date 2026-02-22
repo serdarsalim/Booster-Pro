@@ -1,18 +1,44 @@
-import { BUILTIN_ENGINE_IDS, CATEGORY_ORDER, sanitizeCustomEngine } from "./engines.js";
+import { BUILTIN_ENGINE_IDS, CATEGORY_ORDER, getAvailableEngines, sanitizeCustomEngine } from "./engines.js";
 
 const LEGACY_BUILTIN_ID_MAP = Object.freeze({
   gemini: "youcom"
 });
 
 const DEFAULT_ENABLED_BUILTIN_IDS = ["perplexity", "google", "youtube", "reddit"];
+const LAYOUT_COLUMN_COUNT = 3;
+
+const DEFAULT_HEADER_LABELS = Object.freeze({
+  AI: "AI",
+  Web: "Web",
+  Tech: "Tech",
+  Shopping: "Shopping",
+  News: "News",
+  Research: "Research",
+  Social: "Social Media",
+  Productivity: "Productivity",
+  Utilities: "Utilities"
+});
+
+const CATEGORY_COLUMN_INDEX = Object.freeze({
+  AI: 0,
+  Web: 1,
+  Tech: 2,
+  Shopping: 0,
+  News: 1,
+  Research: 2,
+  Social: 0,
+  Productivity: 1,
+  Utilities: 2
+});
 
 export const DEFAULT_SETTINGS = {
-  schemaVersion: 3,
+  schemaVersion: 4,
   enabledEngineIds: DEFAULT_ENABLED_BUILTIN_IDS.filter((id) => BUILTIN_ENGINE_IDS.includes(id)),
   hiddenBuiltinIds: [],
   customEngines: [],
   engineLabelOverrides: {},
   headerLabels: {},
+  layoutColumns: Array.from({ length: LAYOUT_COLUMN_COUNT }, () => []),
   behavior: {
     openInBackground: false,
     openNextToCurrent: true
@@ -128,6 +154,126 @@ function sanitizeHeaderLabels(rawMap) {
   return out;
 }
 
+function slugify(value) {
+  return String(value || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function uniqueSectionId(baseId, usedIds) {
+  const safeBase = slugify(baseId) || "category";
+  let nextId = safeBase;
+  let counter = 2;
+  while (usedIds.has(nextId)) {
+    nextId = `${safeBase}-${counter}`;
+    counter += 1;
+  }
+  usedIds.add(nextId);
+  return nextId;
+}
+
+function sanitizeLayoutColumns(rawColumns, allowedEngineIds) {
+  const out = Array.from({ length: LAYOUT_COLUMN_COUNT }, () => []);
+  const allowedSet = new Set(allowedEngineIds);
+  const usedSectionIds = new Set();
+  const usedEngineIds = new Set();
+
+  if (!Array.isArray(rawColumns)) {
+    return out;
+  }
+
+  for (let columnIndex = 0; columnIndex < LAYOUT_COLUMN_COUNT; columnIndex += 1) {
+    const rawSections = Array.isArray(rawColumns[columnIndex]) ? rawColumns[columnIndex] : [];
+    rawSections.forEach((rawSection, sectionIndex) => {
+      if (!rawSection || typeof rawSection !== "object" || Array.isArray(rawSection)) {
+        return;
+      }
+
+      const rawId = typeof rawSection.id === "string" ? rawSection.id.trim() : "";
+      const id = uniqueSectionId(rawId || `category-${columnIndex + 1}-${sectionIndex + 1}`, usedSectionIds);
+
+      const rawName = typeof rawSection.name === "string" ? rawSection.name.trim() : "";
+      const name = rawName || `Category ${sectionIndex + 1}`;
+
+      const rawEngineIds = Array.isArray(rawSection.engineIds) ? rawSection.engineIds : [];
+      const engineIds = [];
+      rawEngineIds.forEach((engineId) => {
+        if (typeof engineId !== "string" || !allowedSet.has(engineId) || usedEngineIds.has(engineId)) {
+          return;
+        }
+        usedEngineIds.add(engineId);
+        engineIds.push(engineId);
+      });
+
+      out[columnIndex].push({ id, name, engineIds });
+    });
+  }
+
+  return out;
+}
+
+function appendMissingEngines(columns, allowedEngineIds) {
+  const assigned = new Set();
+  columns.forEach((sections) => {
+    sections.forEach((section) => {
+      section.engineIds.forEach((engineId) => assigned.add(engineId));
+    });
+  });
+
+  const missing = allowedEngineIds.filter((engineId) => !assigned.has(engineId));
+  if (!missing.length) {
+    return columns;
+  }
+
+  if (!columns[0].length) {
+    columns[0].push({
+      id: "general",
+      name: "General",
+      engineIds: []
+    });
+  }
+
+  columns[0][0].engineIds.push(...missing);
+  return columns;
+}
+
+function migrateLayoutColumns(hiddenBuiltinIds, customEngines, headerLabels, allowedEngineIds) {
+  const columns = Array.from({ length: LAYOUT_COLUMN_COUNT }, () => []);
+  const usedSectionIds = new Set();
+
+  const available = getAvailableEngines({
+    hiddenBuiltinIds,
+    customEngines
+  });
+
+  const groups = new Map();
+  CATEGORY_ORDER.forEach((category) => groups.set(category, []));
+  available.forEach((engine) => {
+    if (!groups.has(engine.category)) {
+      groups.set(engine.category, []);
+    }
+    groups.get(engine.category).push(engine.id);
+  });
+
+  CATEGORY_ORDER.forEach((category) => {
+    const ids = groups.get(category) || [];
+    if (!ids.length) {
+      return;
+    }
+    const sectionId = uniqueSectionId(`category-${category}`, usedSectionIds);
+    const name = headerLabels[category] || DEFAULT_HEADER_LABELS[category] || category;
+    const columnIndex = CATEGORY_COLUMN_INDEX[category] ?? 0;
+    columns[columnIndex].push({
+      id: sectionId,
+      name,
+      engineIds: ids.filter((engineId) => allowedEngineIds.includes(engineId))
+    });
+  });
+
+  return appendMissingEngines(columns, allowedEngineIds);
+}
+
 function migrateEnabledIds(settings, allowedIds) {
   const direct = dedupeEngineIds(remapLegacyBuiltinIds(settings.enabledEngineIds), allowedIds);
   if (direct.length) {
@@ -160,6 +306,11 @@ export function sanitizeSettings(rawSettings) {
     allowedEngineIds
   );
   const headerLabels = sanitizeHeaderLabels(settings.headerLabels);
+  let layoutColumns = sanitizeLayoutColumns(settings.layoutColumns, allowedEngineIds);
+  if (!layoutColumns.some((sections) => sections.length > 0)) {
+    layoutColumns = migrateLayoutColumns(hiddenBuiltinIds, customEngines, headerLabels, allowedEngineIds);
+  }
+  layoutColumns = appendMissingEngines(layoutColumns, allowedEngineIds);
 
   const behavior = {
     openInBackground: Boolean(settings.behavior && settings.behavior.openInBackground),
@@ -176,6 +327,7 @@ export function sanitizeSettings(rawSettings) {
     customEngines,
     engineLabelOverrides,
     headerLabels,
+    layoutColumns,
     behavior
   };
 }

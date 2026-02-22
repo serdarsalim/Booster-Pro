@@ -1,42 +1,43 @@
-import { CATEGORY_ORDER, groupEnginesByCategory } from "../shared/engines.js";
+import { BUILTIN_ENGINES, CATEGORY_ORDER, getAvailableEngines } from "../shared/engines.js";
 import { DEFAULT_SETTINGS } from "../shared/defaultSettings.js";
 
 const QUERY_STORAGE_KEY = "boosterPersistedQuery";
+const LAYOUT_COLUMN_COUNT = 3;
 
-const CONTAINER_IDS = {
-  AI: "ai-engines",
-  Web: "web-engines",
-  Tech: "tech-engines",
-  Shopping: "shopping-engines",
-  News: "news-engines",
-  Research: "research-engines",
-  Social: "social-engines",
-  Productivity: "productivity-engines",
-  Utilities: "utilities-engines"
-};
-
-const DEFAULT_HEADER_LABELS = Object.freeze({
+const SHARED_TYPE_TO_CATEGORY = Object.freeze({
   AI: "AI",
-  Web: "Web",
-  Tech: "Tech",
-  Shopping: "Shopping",
+  Search: "Web",
   News: "News",
-  Research: "Research",
-  Social: "Social Media",
-  Productivity: "Productivity",
-  Utilities: "Utilities"
+  Develop: "Tech",
+  Scholar: "Research",
+  Social: "Social",
+  Shopping: "Shopping",
+  Translate: "Utilities",
+  "Search by image": "Utilities",
+  "Search in page": "Utilities",
+  Music: "Social",
+  APP: "Utilities",
+  Movie: "Social",
+  Video: "Social",
+  "Web cache": "Utilities",
+  Assit: "Productivity",
+  ACG: "Social",
+  Wiki: "Research",
+  "E-book": "Research",
+  Download: "Utilities",
+  Page: "Utilities"
 });
 
-const HEADER_IDS = Object.freeze({
-  AI: "header-ai",
-  Web: "header-web",
-  Tech: "header-tech",
-  Shopping: "header-shopping",
-  News: "header-news",
-  Research: "header-research",
-  Social: "header-social",
-  Productivity: "header-productivity",
-  Utilities: "header-utilities"
+const CATEGORY_COLUMN_INDEX = Object.freeze({
+  AI: 0,
+  Web: 1,
+  Tech: 2,
+  Shopping: 0,
+  News: 1,
+  Research: 2,
+  Social: 0,
+  Productivity: 1,
+  Utilities: 2
 });
 
 let settings = null;
@@ -45,6 +46,16 @@ let querySelectOnFocusArmed = true;
 let activeView = "menu";
 let editMode = false;
 let editDraft = null;
+
+let activeAddSectionId = null;
+let sharedCatalog = [];
+let sharedCatalogLoaded = false;
+let sharedCatalogByKey = new Map();
+
+const dragState = {
+  engineId: null,
+  sourceSectionId: null
+};
 
 function sendMessage(type, payload = {}) {
   return new Promise((resolve, reject) => {
@@ -113,11 +124,162 @@ function escapeHtml(value) {
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")
-    .replaceAll("\"", "&quot;");
+    .replaceAll('"', "&quot;");
 }
 
 function getWorkingSettings() {
   return editMode && editDraft ? editDraft : settings;
+}
+
+function slugify(value) {
+  return String(value || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function generateSectionId(label, targetSettings) {
+  const safe = slugify(label) || "category";
+  const allIds = new Set();
+  const columns = Array.isArray(targetSettings.layoutColumns) ? targetSettings.layoutColumns : [];
+  columns.forEach((sections) => {
+    (Array.isArray(sections) ? sections : []).forEach((section) => {
+      if (section && typeof section.id === "string") {
+        allIds.add(section.id);
+      }
+    });
+  });
+
+  let next = safe;
+  let counter = 2;
+  while (allIds.has(next)) {
+    next = `${safe}-${counter}`;
+    counter += 1;
+  }
+  return next;
+}
+
+function buildEmptyColumns() {
+  return Array.from({ length: LAYOUT_COLUMN_COUNT }, () => []);
+}
+
+function getAllowedEngineIds(targetSettings) {
+  return getAvailableEngines(targetSettings).map((engine) => engine.id);
+}
+
+function normalizeLayoutColumns(rawColumns, allowedEngineIds) {
+  const out = buildEmptyColumns();
+  const allowedSet = new Set(allowedEngineIds);
+  const usedSectionIds = new Set();
+  const usedEngineIds = new Set();
+
+  if (!Array.isArray(rawColumns)) {
+    return out;
+  }
+
+  for (let columnIndex = 0; columnIndex < LAYOUT_COLUMN_COUNT; columnIndex += 1) {
+    const rawSections = Array.isArray(rawColumns[columnIndex]) ? rawColumns[columnIndex] : [];
+    rawSections.forEach((rawSection, sectionIndex) => {
+      if (!rawSection || typeof rawSection !== "object" || Array.isArray(rawSection)) {
+        return;
+      }
+
+      const sourceId = typeof rawSection.id === "string" ? rawSection.id.trim() : "";
+      let sectionId = sourceId || `category-${columnIndex + 1}-${sectionIndex + 1}`;
+      if (usedSectionIds.has(sectionId)) {
+        let suffix = 2;
+        while (usedSectionIds.has(`${sectionId}-${suffix}`)) {
+          suffix += 1;
+        }
+        sectionId = `${sectionId}-${suffix}`;
+      }
+      usedSectionIds.add(sectionId);
+
+      const rawName = typeof rawSection.name === "string" ? rawSection.name.trim() : "";
+      const name = rawName || `Category ${sectionIndex + 1}`;
+
+      const rawEngineIds = Array.isArray(rawSection.engineIds) ? rawSection.engineIds : [];
+      const engineIds = [];
+      rawEngineIds.forEach((engineId) => {
+        if (typeof engineId !== "string" || !allowedSet.has(engineId) || usedEngineIds.has(engineId)) {
+          return;
+        }
+        usedEngineIds.add(engineId);
+        engineIds.push(engineId);
+      });
+
+      out[columnIndex].push({ id: sectionId, name, engineIds });
+    });
+  }
+
+  return out;
+}
+
+function buildDefaultLayoutColumns(targetSettings, allowedEngineIds) {
+  const columns = buildEmptyColumns();
+  const allowedSet = new Set(allowedEngineIds);
+  const available = getAvailableEngines(targetSettings);
+  const groups = new Map();
+  CATEGORY_ORDER.forEach((category) => groups.set(category, []));
+
+  available.forEach((engine) => {
+    if (!allowedSet.has(engine.id)) {
+      return;
+    }
+    if (!groups.has(engine.category)) {
+      groups.set(engine.category, []);
+    }
+    groups.get(engine.category).push(engine.id);
+  });
+
+  CATEGORY_ORDER.forEach((category) => {
+    const ids = groups.get(category) || [];
+    if (!ids.length) {
+      return;
+    }
+    const columnIndex = CATEGORY_COLUMN_INDEX[category] ?? 0;
+    columns[columnIndex].push({
+      id: `category-${slugify(category) || "group"}`,
+      name: category === "Social" ? "Social Media" : category,
+      engineIds: ids
+    });
+  });
+
+  return columns;
+}
+
+function ensureLayoutColumns(targetSettings) {
+  if (!targetSettings || typeof targetSettings !== "object") {
+    return;
+  }
+
+  const allowedEngineIds = getAllowedEngineIds(targetSettings);
+  targetSettings.layoutColumns = normalizeLayoutColumns(targetSettings.layoutColumns, allowedEngineIds);
+  if (!targetSettings.layoutColumns.some((sections) => sections.length > 0) && allowedEngineIds.length > 0) {
+    targetSettings.layoutColumns = buildDefaultLayoutColumns(targetSettings, allowedEngineIds);
+  }
+
+  const assigned = new Set();
+  targetSettings.layoutColumns.forEach((sections) => {
+    sections.forEach((section) => {
+      section.engineIds.forEach((engineId) => assigned.add(engineId));
+    });
+  });
+
+  const missing = allowedEngineIds.filter((engineId) => !assigned.has(engineId));
+  if (!missing.length) {
+    return;
+  }
+
+  if (!targetSettings.layoutColumns[0].length) {
+    targetSettings.layoutColumns[0].push({
+      id: generateSectionId("general", targetSettings),
+      name: "General",
+      engineIds: []
+    });
+  }
+
+  targetSettings.layoutColumns[0][0].engineIds.push(...missing);
 }
 
 function ensureSettingsShape(targetSettings) {
@@ -139,16 +301,16 @@ function ensureSettingsShape(targetSettings) {
   if (!targetSettings.headerLabels || typeof targetSettings.headerLabels !== "object") {
     targetSettings.headerLabels = {};
   }
+
+  ensureLayoutColumns(targetSettings);
 }
 
-function getHeaderLabel(category, targetSettings) {
-  const source = targetSettings || settings;
-  ensureSettingsShape(source);
-  const custom = source && source.headerLabels ? source.headerLabels[category] : "";
-  if (typeof custom === "string" && custom.trim()) {
-    return custom.trim();
-  }
-  return DEFAULT_HEADER_LABELS[category] || category;
+function getEngineMap(targetSettings) {
+  const map = new Map();
+  getAvailableEngines(targetSettings).forEach((engine) => {
+    map.set(engine.id, engine);
+  });
+  return map;
 }
 
 function updateTopActionButtons() {
@@ -252,6 +414,10 @@ async function flushAutosave() {
 
 function runEngineSearch(engineId) {
   const queryInput = document.getElementById("query-input");
+  if (!(queryInput instanceof HTMLInputElement)) {
+    return;
+  }
+
   const query = queryInput.value.trim();
   if (!query) {
     queryInput.focus();
@@ -261,10 +427,21 @@ function runEngineSearch(engineId) {
   sendMessage("RUN_SEARCH", { query, engineId }).catch(() => undefined);
 }
 
+function removeEngineFromAllSections(targetSettings, engineId) {
+  targetSettings.layoutColumns.forEach((sections) => {
+    sections.forEach((section) => {
+      section.engineIds = section.engineIds.filter((id) => id !== engineId);
+    });
+  });
+}
+
 function removeEngine(engineId, targetSettings = settings) {
   if (!targetSettings) {
     return;
   }
+
+  ensureSettingsShape(targetSettings);
+
   if (isCustomId(engineId)) {
     targetSettings.customEngines = (targetSettings.customEngines || []).filter((engine) => engine.id !== engineId);
   } else {
@@ -277,71 +454,236 @@ function removeEngine(engineId, targetSettings = settings) {
   if (targetSettings.engineLabelOverrides && typeof targetSettings.engineLabelOverrides === "object") {
     delete targetSettings.engineLabelOverrides[engineId];
   }
+
+  removeEngineFromAllSections(targetSettings, engineId);
 }
 
-function renderHeader(category, targetSettings) {
-  const headerId = HEADER_IDS[category];
-  const headerElement = document.getElementById(headerId);
-  if (!(headerElement instanceof HTMLElement)) {
-    return;
+function getSectionRef(targetSettings, sectionId) {
+  if (!targetSettings || !Array.isArray(targetSettings.layoutColumns)) {
+    return null;
   }
-  const label = getHeaderLabel(category, targetSettings);
-  if (editMode) {
-    headerElement.innerHTML = `
-      <input
-        class="header-name-input"
-        type="text"
-        data-header-category="${category}"
-        value="${escapeHtml(label)}"
-        aria-label="Rename ${escapeHtml(DEFAULT_HEADER_LABELS[category] || category)} section"
-      >
-    `;
-    return;
+  for (let columnIndex = 0; columnIndex < targetSettings.layoutColumns.length; columnIndex += 1) {
+    const sections = targetSettings.layoutColumns[columnIndex];
+    const sectionIndex = sections.findIndex((section) => section.id === sectionId);
+    if (sectionIndex !== -1) {
+      return {
+        columnIndex,
+        sectionIndex,
+        section: sections[sectionIndex]
+      };
+    }
   }
-  headerElement.textContent = label;
+  return null;
 }
 
-function renderCategory(category, engines, enabledSet) {
-  const containerId = CONTAINER_IDS[category];
-  const container = document.getElementById(containerId);
-  if (!container) {
+function moveSectionEnginesToFallback(targetSettings, sectionToRemove, preferredColumnIndex) {
+  if (!sectionToRemove.engineIds.length) {
     return;
   }
 
-  container.innerHTML = engines
-    .map((engine) => {
-      if (editMode) {
-        return `
-          <div class="engine-item engine-item-edit">
-            <span class="engine-main">
-              <input
-                type="text"
-                class="engine-name-input"
-                data-edit-engine-id="${engine.id}"
-                value="${escapeHtml(engine.name)}"
-                aria-label="Rename ${escapeHtml(engine.name)} engine"
-              >
-            </span>
-            <button type="button" class="remove-btn remove-btn-edit" data-remove-id="${engine.id}">Delete</button>
-          </div>
-        `;
+  let fallback = null;
+  const preferredSections = targetSettings.layoutColumns[preferredColumnIndex] || [];
+  fallback = preferredSections.find((section) => section.id !== sectionToRemove.id) || null;
+
+  if (!fallback) {
+    for (let col = 0; col < targetSettings.layoutColumns.length; col += 1) {
+      fallback = targetSettings.layoutColumns[col].find((section) => section.id !== sectionToRemove.id) || null;
+      if (fallback) {
+        break;
       }
+    }
+  }
 
-      const checked = enabledSet.has(engine.id) ? "checked" : "";
-      return `
-        <div class="engine-item">
-          <span class="engine-main">
-            <label class="engine-switch" aria-label="Toggle ${engine.name}">
-              <input class="engine-toggle-input" type="checkbox" name="enabled-engine" value="${engine.id}" ${checked}>
-              <span class="engine-toggle"></span>
-            </label>
-            <button type="button" class="search-btn" data-search-id="${engine.id}">${engine.name}</button>
-          </span>
-          <button type="button" class="remove-btn" data-remove-id="${engine.id}">Delete</button>
+  if (!fallback) {
+    const fallbackSection = {
+      id: generateSectionId("general", targetSettings),
+      name: "General",
+      engineIds: []
+    };
+    targetSettings.layoutColumns[preferredColumnIndex].push(fallbackSection);
+    fallback = fallbackSection;
+  }
+
+  const seen = new Set(fallback.engineIds);
+  sectionToRemove.engineIds.forEach((engineId) => {
+    if (seen.has(engineId)) {
+      return;
+    }
+    seen.add(engineId);
+    fallback.engineIds.push(engineId);
+  });
+}
+
+function addCategory(columnIndex, targetSettings) {
+  ensureSettingsShape(targetSettings);
+  if (!targetSettings.layoutColumns[columnIndex]) {
+    targetSettings.layoutColumns[columnIndex] = [];
+  }
+  const nextSection = {
+    id: generateSectionId("new-category", targetSettings),
+    name: "New Category",
+    engineIds: []
+  };
+  targetSettings.layoutColumns[columnIndex].push(nextSection);
+}
+
+function removeCategory(sectionId, targetSettings) {
+  ensureSettingsShape(targetSettings);
+  const ref = getSectionRef(targetSettings, sectionId);
+  if (!ref) {
+    return;
+  }
+
+  const section = ref.section;
+  moveSectionEnginesToFallback(targetSettings, section, ref.columnIndex);
+
+  targetSettings.layoutColumns[ref.columnIndex] = targetSettings.layoutColumns[ref.columnIndex].filter(
+    (candidate) => candidate.id !== sectionId
+  );
+}
+
+function assignEngineToSection(targetSettings, sectionId, engineId, beforeEngineId = null) {
+  ensureSettingsShape(targetSettings);
+
+  targetSettings.layoutColumns.forEach((sections) => {
+    sections.forEach((section) => {
+      section.engineIds = section.engineIds.filter((id) => id !== engineId);
+    });
+  });
+
+  const ref = getSectionRef(targetSettings, sectionId);
+  if (!ref) {
+    return;
+  }
+
+  const list = ref.section.engineIds;
+  if (beforeEngineId) {
+    const index = list.indexOf(beforeEngineId);
+    if (index !== -1) {
+      list.splice(index, 0, engineId);
+    } else {
+      list.push(engineId);
+    }
+  } else {
+    list.push(engineId);
+  }
+
+  targetSettings.hiddenBuiltinIds = (targetSettings.hiddenBuiltinIds || []).filter((id) => id !== engineId);
+
+  const enabled = new Set(targetSettings.enabledEngineIds || []);
+  enabled.add(engineId);
+  targetSettings.enabledEngineIds = Array.from(enabled);
+}
+
+function renderEngineItem(engine, enabledSet) {
+  if (editMode) {
+    return `
+      <div class="engine-item engine-item-edit" draggable="true" data-drag-engine-id="${escapeHtml(engine.id)}" data-section-id="${escapeHtml(engine.sectionId)}">
+        <span class="drag-handle" title="Drag to reorder or move">&#8942;&#8942;</span>
+        <span class="engine-main">
+          <input
+            type="text"
+            class="engine-name-input"
+            data-edit-engine-id="${escapeHtml(engine.id)}"
+            value="${escapeHtml(engine.name)}"
+            aria-label="Rename ${escapeHtml(engine.name)} engine"
+          >
+        </span>
+        <button type="button" class="remove-btn remove-btn-edit" data-remove-id="${escapeHtml(engine.id)}" aria-label="Remove engine">&times;</button>
+      </div>
+    `;
+  }
+
+  const checked = enabledSet.has(engine.id) ? "checked" : "";
+  return `
+    <div class="engine-item">
+      <span class="engine-main">
+        <label class="engine-switch" aria-label="Toggle ${escapeHtml(engine.name)}">
+          <input class="engine-toggle-input" type="checkbox" name="enabled-engine" value="${escapeHtml(engine.id)}" ${checked}>
+          <span class="engine-toggle"></span>
+        </label>
+        <button type="button" class="search-btn" data-search-id="${escapeHtml(engine.id)}">${escapeHtml(engine.name)}</button>
+      </span>
+    </div>
+  `;
+}
+
+function renderSection(section, engineMap, enabledSet) {
+  const engines = section.engineIds
+    .map((engineId) => {
+      const engine = engineMap.get(engineId);
+      if (!engine) {
+        return null;
+      }
+      return {
+        ...engine,
+        sectionId: section.id
+      };
+    })
+    .filter((engine) => Boolean(engine));
+
+  const headerTitle = editMode
+    ? `
+      <input
+        class="category-name-input"
+        type="text"
+        data-section-name-id="${escapeHtml(section.id)}"
+        value="${escapeHtml(section.name)}"
+        aria-label="Rename ${escapeHtml(section.name)} category"
+      >
+    `
+    : `<h3 class="category-title">${escapeHtml(section.name)}</h3>`;
+
+  const controls = editMode
+    ? `
+      <div class="category-actions">
+        <button type="button" class="add-more-btn" data-add-more-section="${escapeHtml(section.id)}">+ Add more</button>
+        <button type="button" class="remove-category-btn" data-remove-section="${escapeHtml(section.id)}" aria-label="Remove category">&times;</button>
+      </div>
+    `
+    : "";
+
+  return `
+    <section class="category-card" data-section-id="${escapeHtml(section.id)}">
+      <header class="category-header">
+        <div class="category-header-row">
+          ${headerTitle}
         </div>
+        ${controls}
+      </header>
+      <div class="engine-list" data-section-id="${escapeHtml(section.id)}">
+        ${engines.map((engine) => renderEngineItem(engine, enabledSet)).join("")}
+      </div>
+    </section>
+  `;
+}
+
+function renderColumns(workingSettings) {
+  const engineColumns = document.getElementById("engine-columns");
+  if (!(engineColumns instanceof HTMLElement)) {
+    return;
+  }
+
+  const enabledSet = new Set(workingSettings.enabledEngineIds || []);
+  const engineMap = getEngineMap(workingSettings);
+
+  const html = workingSettings.layoutColumns
+    .map((sections, columnIndex) => {
+      const sectionHtml = sections.map((section) => renderSection(section, engineMap, enabledSet)).join("");
+      const addCategoryButton = editMode
+        ? `<button type="button" class="add-category-btn" data-add-category-column="${columnIndex}">+ Add category</button>`
+        : "";
+
+      return `
+        <section class="engine-col" data-column-index="${columnIndex}">
+          ${sectionHtml}
+          ${addCategoryButton}
+        </section>
       `;
     })
     .join("");
+
+  engineColumns.innerHTML = html;
 }
 
 function render() {
@@ -349,54 +691,17 @@ function render() {
   if (!workingSettings) {
     return;
   }
+
   ensureSettingsShape(workingSettings);
-
-  const enabledSet = new Set(workingSettings.enabledEngineIds || []);
-  const grouped = groupEnginesByCategory(workingSettings);
-
-  CATEGORY_ORDER.forEach((category) => {
-    renderHeader(category, workingSettings);
-    renderCategory(category, grouped.get(category) || [], enabledSet);
-  });
+  renderColumns(workingSettings);
 
   document.body.classList.toggle("is-edit-mode", editMode);
   updateTopActionButtons();
   syncViewHeight();
 }
 
-function addCustomEngine() {
-  if (editMode) {
-    return;
-  }
-  const nameInput = document.getElementById("custom-name");
-  const urlInput = document.getElementById("custom-url");
-  const categorySelect = document.getElementById("custom-category");
-
-  const name = nameInput.value.trim();
-  const urlTemplate = urlInput.value.trim();
-  const category = categorySelect.value;
-
-  if (!name || !urlTemplate || !urlTemplate.includes("%s")) {
-    return;
-  }
-
-  const id = `custom-${Date.now().toString(36)}`;
-  const customEngine = { id, name, urlTemplate, category };
-
-  settings.customEngines = Array.isArray(settings.customEngines) ? settings.customEngines : [];
-  settings.customEngines.push(customEngine);
-
-  settings.enabledEngineIds = Array.isArray(settings.enabledEngineIds) ? settings.enabledEngineIds : [];
-  settings.enabledEngineIds.push(id);
-
-  nameInput.value = "";
-  urlInput.value = "";
-
-  render();
-  queueAutosave();
-}
-
 function resetDefaults() {
+  closeAddMoreModal();
   editMode = false;
   editDraft = null;
   settings = deepClone(DEFAULT_SETTINGS);
@@ -421,6 +726,7 @@ function cancelEditMode() {
   if (!editMode) {
     return;
   }
+  closeAddMoreModal();
   editMode = false;
   editDraft = null;
   render();
@@ -430,6 +736,8 @@ async function doneEditMode() {
   if (!editMode || !editDraft) {
     return;
   }
+
+  closeAddMoreModal();
 
   try {
     const response = await sendMessage("SAVE_SETTINGS", { settings: editDraft });
@@ -444,11 +752,274 @@ async function doneEditMode() {
   renderSettingsForm();
 }
 
+function mapSharedTypeToCategory(type) {
+  const mapped = SHARED_TYPE_TO_CATEGORY[type];
+  if (mapped && CATEGORY_ORDER.includes(mapped)) {
+    return mapped;
+  }
+  return "Web";
+}
+
+function isCompatibleSharedEntry(site) {
+  if (!site || typeof site !== "object") {
+    return false;
+  }
+
+  const name = typeof site.name === "string" ? site.name.trim() : "";
+  const url = typeof site.url === "string" ? site.url.trim() : "";
+  if (!name || !url || !url.includes("%s")) {
+    return false;
+  }
+  if (!/^https?:\/\//i.test(url)) {
+    return false;
+  }
+  return true;
+}
+
+async function loadSharedCatalog() {
+  if (sharedCatalogLoaded) {
+    return;
+  }
+
+  sharedCatalogLoaded = true;
+  sharedCatalog = [];
+  sharedCatalogByKey = new Map();
+
+  try {
+    const response = await fetch(chrome.runtime.getURL("sharedengines.json"));
+    const raw = await response.json();
+    const dedupe = new Set();
+
+    (Array.isArray(raw) ? raw : []).forEach((group) => {
+      const type = typeof group.type === "string" ? group.type : "Other";
+      const sites = Array.isArray(group.sites) ? group.sites : [];
+      sites.forEach((site) => {
+        if (!isCompatibleSharedEntry(site)) {
+          return;
+        }
+
+        const name = site.name.trim();
+        const urlTemplate = site.url.trim();
+        const dedupeKey = `${name}|${urlTemplate}`;
+        if (dedupe.has(dedupeKey)) {
+          return;
+        }
+        dedupe.add(dedupeKey);
+
+        const key = `shared-${slugify(type)}-${slugify(name)}-${sharedCatalog.length + 1}`;
+        const entry = {
+          key,
+          type,
+          category: mapSharedTypeToCategory(type),
+          name,
+          urlTemplate,
+          label: `${name} (${type})`
+        };
+
+        sharedCatalog.push(entry);
+        sharedCatalogByKey.set(key, entry);
+      });
+    });
+
+    sharedCatalog.sort((a, b) => a.label.localeCompare(b.label));
+  } catch (_error) {
+    sharedCatalog = [];
+    sharedCatalogByKey = new Map();
+  }
+}
+
+function refreshSharedSelect() {
+  const input = document.getElementById("shared-search-input");
+  const select = document.getElementById("shared-engine-select");
+  if (!(input instanceof HTMLInputElement) || !(select instanceof HTMLSelectElement)) {
+    return;
+  }
+
+  const keyword = input.value.trim().toLowerCase();
+  const filtered = keyword
+    ? sharedCatalog.filter((entry) => entry.label.toLowerCase().includes(keyword))
+    : sharedCatalog;
+
+  select.innerHTML = "";
+  const fragment = document.createDocumentFragment();
+  filtered.forEach((entry, index) => {
+    const option = document.createElement("option");
+    option.value = entry.key;
+    option.textContent = entry.label;
+    option.title = entry.urlTemplate;
+    if (index === 0) {
+      option.selected = true;
+    }
+    fragment.appendChild(option);
+  });
+  select.appendChild(fragment);
+}
+
+function getSectionName(targetSettings, sectionId) {
+  const ref = getSectionRef(targetSettings, sectionId);
+  return ref ? ref.section.name : "Category";
+}
+
+async function openAddMoreModal(sectionId) {
+  if (!editMode || !editDraft) {
+    return;
+  }
+
+  activeAddSectionId = sectionId;
+  const modal = document.getElementById("add-more-modal");
+  const subtitle = document.getElementById("add-more-subtitle");
+  const manualName = document.getElementById("manual-engine-name");
+  const manualUrl = document.getElementById("manual-engine-url");
+  const searchInput = document.getElementById("shared-search-input");
+
+  if (!(modal instanceof HTMLElement) || !(subtitle instanceof HTMLElement)) {
+    return;
+  }
+
+  subtitle.textContent = `Adding to ${getSectionName(editDraft, sectionId)}`;
+
+  if (manualName instanceof HTMLInputElement) {
+    manualName.value = "";
+  }
+  if (manualUrl instanceof HTMLInputElement) {
+    manualUrl.value = "";
+  }
+  if (searchInput instanceof HTMLInputElement) {
+    searchInput.value = "";
+  }
+
+  await loadSharedCatalog();
+  refreshSharedSelect();
+
+  modal.hidden = false;
+}
+
+function closeAddMoreModal() {
+  const modal = document.getElementById("add-more-modal");
+  if (modal instanceof HTMLElement) {
+    modal.hidden = true;
+  }
+  activeAddSectionId = null;
+}
+
+function createUniqueCustomId(name, targetSettings) {
+  const base = slugify(name) || "engine";
+  const usedIds = new Set();
+
+  BUILTIN_ENGINES.forEach((engine) => usedIds.add(engine.id));
+  (targetSettings.customEngines || []).forEach((engine) => {
+    if (engine && typeof engine.id === "string") {
+      usedIds.add(engine.id);
+    }
+  });
+
+  let id = `custom-${base}`;
+  let counter = 2;
+  while (usedIds.has(id)) {
+    id = `custom-${base}-${counter}`;
+    counter += 1;
+  }
+  return id;
+}
+
+function upsertEngine(name, urlTemplate, category, targetSettings) {
+  const normalizedName = name.trim();
+  const normalizedUrl = urlTemplate.trim();
+  const normalizedCategory = CATEGORY_ORDER.includes(category) ? category : "Web";
+
+  const builtinMatch = BUILTIN_ENGINES.find((engine) => engine.urlTemplate === normalizedUrl);
+  if (builtinMatch) {
+    targetSettings.hiddenBuiltinIds = (targetSettings.hiddenBuiltinIds || []).filter((id) => id !== builtinMatch.id);
+    return builtinMatch.id;
+  }
+
+  const existingCustom = (targetSettings.customEngines || []).find((engine) => {
+    if (!engine || typeof engine !== "object") {
+      return false;
+    }
+    return String(engine.urlTemplate || "").trim() === normalizedUrl
+      || String(engine.name || "").trim().toLowerCase() === normalizedName.toLowerCase();
+  });
+
+  if (existingCustom) {
+    return existingCustom.id;
+  }
+
+  const nextId = createUniqueCustomId(normalizedName, targetSettings);
+  const customEngine = {
+    id: nextId,
+    name: normalizedName,
+    urlTemplate: normalizedUrl,
+    category: normalizedCategory
+  };
+
+  targetSettings.customEngines = Array.isArray(targetSettings.customEngines) ? targetSettings.customEngines : [];
+  targetSettings.customEngines.push(customEngine);
+  return nextId;
+}
+
+function addManualEngineToActiveSection() {
+  if (!editDraft || !activeAddSectionId) {
+    return;
+  }
+
+  const nameInput = document.getElementById("manual-engine-name");
+  const urlInput = document.getElementById("manual-engine-url");
+  const categorySelect = document.getElementById("manual-engine-category");
+
+  if (!(nameInput instanceof HTMLInputElement)
+    || !(urlInput instanceof HTMLInputElement)
+    || !(categorySelect instanceof HTMLSelectElement)) {
+    return;
+  }
+
+  const name = nameInput.value.trim();
+  const urlTemplate = urlInput.value.trim();
+  const category = categorySelect.value;
+
+  if (!name || !urlTemplate.includes("%s") || !/^https?:\/\//i.test(urlTemplate)) {
+    return;
+  }
+
+  const engineId = upsertEngine(name, urlTemplate, category, editDraft);
+  assignEngineToSection(editDraft, activeAddSectionId, engineId);
+  render();
+  closeAddMoreModal();
+}
+
+function addSharedEngineToActiveSection() {
+  if (!editDraft || !activeAddSectionId) {
+    return;
+  }
+
+  const select = document.getElementById("shared-engine-select");
+  if (!(select instanceof HTMLSelectElement) || !select.value) {
+    return;
+  }
+
+  const entry = sharedCatalogByKey.get(select.value);
+  if (!entry) {
+    return;
+  }
+
+  const engineId = upsertEngine(entry.name, entry.urlTemplate, entry.category, editDraft);
+  assignEngineToSection(editDraft, activeAddSectionId, engineId);
+  render();
+  closeAddMoreModal();
+}
+
+function clearDropTargets() {
+  document.querySelectorAll(".engine-list.is-drop-target").forEach((element) => {
+    element.classList.remove("is-drop-target");
+  });
+}
+
 function bindEvents() {
   const queryInput = document.getElementById("query-input");
   const clearButton = document.getElementById("clear-query");
   const openInBackgroundInput = document.getElementById("setting-open-background");
   const openNextInput = document.getElementById("setting-open-next");
+
   if (queryInput instanceof HTMLInputElement) {
     queryInput.addEventListener("focus", () => {
       if (!queryInput.value || !querySelectOnFocusArmed) {
@@ -502,7 +1073,12 @@ function bindEvents() {
 
   document.addEventListener("input", (event) => {
     const target = event.target;
-    if (!(target instanceof HTMLInputElement)) {
+    if (!(target instanceof HTMLElement)) {
+      return;
+    }
+
+    if (target.id === "shared-search-input") {
+      refreshSharedSelect();
       return;
     }
 
@@ -510,28 +1086,27 @@ function bindEvents() {
       return;
     }
 
-    const editEngineId = target.getAttribute("data-edit-engine-id");
-    if (editEngineId) {
-      ensureSettingsShape(editDraft);
-      const trimmed = target.value.trim();
-      if (trimmed) {
-        editDraft.engineLabelOverrides[editEngineId] = target.value;
-      } else {
-        delete editDraft.engineLabelOverrides[editEngineId];
+    if (target instanceof HTMLInputElement) {
+      const editEngineId = target.getAttribute("data-edit-engine-id");
+      if (editEngineId) {
+        ensureSettingsShape(editDraft);
+        const trimmed = target.value.trim();
+        if (trimmed) {
+          editDraft.engineLabelOverrides[editEngineId] = trimmed;
+        } else {
+          delete editDraft.engineLabelOverrides[editEngineId];
+        }
+        return;
       }
-      return;
-    }
 
-    const headerCategory = target.getAttribute("data-header-category");
-    if (!headerCategory || !CATEGORY_ORDER.includes(headerCategory)) {
-      return;
-    }
-    ensureSettingsShape(editDraft);
-    const trimmed = target.value.trim();
-    if (trimmed) {
-      editDraft.headerLabels[headerCategory] = target.value;
-    } else {
-      delete editDraft.headerLabels[headerCategory];
+      const sectionId = target.getAttribute("data-section-name-id");
+      if (sectionId) {
+        const ref = getSectionRef(editDraft, sectionId);
+        if (!ref) {
+          return;
+        }
+        ref.section.name = target.value.trim() || "Category";
+      }
     }
   });
 
@@ -563,6 +1138,12 @@ function bindEvents() {
       return;
     }
 
+    const modal = document.getElementById("add-more-modal");
+    if (modal instanceof HTMLElement && !modal.hidden && target === modal) {
+      closeAddMoreModal();
+      return;
+    }
+
     const removeElement = target.closest("[data-remove-id]");
     const removeId = removeElement && removeElement.getAttribute("data-remove-id");
     if (removeId) {
@@ -586,11 +1167,6 @@ function bindEvents() {
 
     const button = target.closest("button");
     if (!(button instanceof HTMLButtonElement)) {
-      return;
-    }
-
-    if (button.id === "add-custom") {
-      addCustomEngine();
       return;
     }
 
@@ -638,18 +1214,168 @@ function bindEvents() {
         .finally(() => {
           chrome.tabs.create({ url: "chrome://extensions/shortcuts" });
         });
+      return;
     }
+
+    if (button.id === "add-more-close") {
+      closeAddMoreModal();
+      return;
+    }
+
+    if (button.id === "add-manual-engine") {
+      addManualEngineToActiveSection();
+      return;
+    }
+
+    if (button.id === "add-shared-engine") {
+      addSharedEngineToActiveSection();
+      return;
+    }
+
+    const addCategoryColumn = button.getAttribute("data-add-category-column");
+    if (addCategoryColumn !== null) {
+      if (!editMode || !editDraft) {
+        return;
+      }
+      addCategory(Number(addCategoryColumn), editDraft);
+      render();
+      return;
+    }
+
+    const removeSectionId = button.getAttribute("data-remove-section");
+    if (removeSectionId) {
+      if (!editMode || !editDraft) {
+        return;
+      }
+      removeCategory(removeSectionId, editDraft);
+      render();
+      return;
+    }
+
+    const addMoreSectionId = button.getAttribute("data-add-more-section");
+    if (addMoreSectionId) {
+      openAddMoreModal(addMoreSectionId).catch(() => undefined);
+    }
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      const modal = document.getElementById("add-more-modal");
+      if (modal instanceof HTMLElement && !modal.hidden) {
+        closeAddMoreModal();
+      }
+    }
+  });
+
+  document.addEventListener("dragstart", (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLElement) || !editMode || !editDraft) {
+      return;
+    }
+
+    const row = target.closest("[data-drag-engine-id]");
+    if (!(row instanceof HTMLElement)) {
+      return;
+    }
+
+    const engineId = row.getAttribute("data-drag-engine-id");
+    const sourceSectionId = row.getAttribute("data-section-id");
+    if (!engineId || !sourceSectionId) {
+      return;
+    }
+
+    dragState.engineId = engineId;
+    dragState.sourceSectionId = sourceSectionId;
+
+    row.classList.add("is-dragging");
+
+    if (event.dataTransfer) {
+      event.dataTransfer.effectAllowed = "move";
+      event.dataTransfer.setData("text/plain", engineId);
+    }
+  });
+
+  document.addEventListener("dragend", () => {
+    dragState.engineId = null;
+    dragState.sourceSectionId = null;
+    clearDropTargets();
+    document.querySelectorAll(".engine-item-edit.is-dragging").forEach((element) => {
+      element.classList.remove("is-dragging");
+    });
+  });
+
+  document.addEventListener("dragover", (event) => {
+    if (!editMode || !editDraft || !dragState.engineId) {
+      return;
+    }
+
+    const target = event.target;
+    if (!(target instanceof HTMLElement)) {
+      return;
+    }
+
+    const list = target.closest(".engine-list");
+    if (!(list instanceof HTMLElement)) {
+      return;
+    }
+
+    event.preventDefault();
+    clearDropTargets();
+    list.classList.add("is-drop-target");
+  });
+
+  document.addEventListener("drop", (event) => {
+    if (!editMode || !editDraft || !dragState.engineId) {
+      return;
+    }
+
+    const target = event.target;
+    if (!(target instanceof HTMLElement)) {
+      return;
+    }
+
+    const list = target.closest(".engine-list");
+    if (!(list instanceof HTMLElement)) {
+      return;
+    }
+
+    event.preventDefault();
+
+    const targetSectionId = list.getAttribute("data-section-id");
+    if (!targetSectionId) {
+      clearDropTargets();
+      return;
+    }
+
+    const rows = Array.from(list.querySelectorAll("[data-drag-engine-id]"))
+      .filter((row) => row instanceof HTMLElement)
+      .filter((row) => row.getAttribute("data-drag-engine-id") !== dragState.engineId);
+
+    let beforeEngineId = null;
+    for (let index = 0; index < rows.length; index += 1) {
+      const row = rows[index];
+      const rect = row.getBoundingClientRect();
+      if (event.clientY < rect.top + rect.height / 2) {
+        beforeEngineId = row.getAttribute("data-drag-engine-id");
+        break;
+      }
+    }
+
+    assignEngineToSection(editDraft, targetSectionId, dragState.engineId, beforeEngineId);
+    clearDropTargets();
+    render();
   });
 }
 
 async function init() {
   bindEvents();
+
   const queryInput = document.getElementById("query-input");
   if (queryInput instanceof HTMLInputElement) {
     queryInput.value = await readPersistedQuery();
     updateQueryControls();
     queryInput.addEventListener("keydown", (event) => {
-      if (event.key !== "Enter") {
+      if (event.key !== "Enter" || editMode) {
         return;
       }
       event.preventDefault();
@@ -663,20 +1389,19 @@ async function init() {
       }
     });
   }
+
   try {
     const response = await sendMessage("GET_SETTINGS");
     settings = response.settings;
-    render();
-    renderSettingsForm();
-    setActiveView("menu");
-    syncViewHeight();
   } catch (_error) {
     settings = deepClone(DEFAULT_SETTINGS);
-    render();
-    renderSettingsForm();
-    setActiveView("menu");
-    syncViewHeight();
   }
+
+  ensureSettingsShape(settings);
+  render();
+  renderSettingsForm();
+  setActiveView("menu");
+  syncViewHeight();
 }
 
 init();
