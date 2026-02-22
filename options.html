@@ -1,0 +1,436 @@
+<!doctype html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="description" content="Booster PRO">
+    <meta name="author" content="Serdar Domurcuk, Sami Kara">
+
+    <title>Booster PRO</title>
+
+    <!-- Scripts -->
+    <script src="jquery/jquery-2.0.3.min.js"></script>
+    <script src="js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="../jquery/jquery-1.10.2.min.js"></script>
+    <script type="text/javascript" src="../jquery/jquery-ui-1.10.3.custom.min.js"></script>
+    <script src="./js/menulinks.js"></script>
+    <script src="./js/getset.js"></script>
+    <script src="./js/options.js"></script>
+
+    <!-- Cascading Style Sheets -->
+    <link href="css/bootstrap.min.css" rel="stylesheet" media="screen">
+    <link href="css/custom.css" rel="stylesheet" media="screen">
+</head>
+
+<body>
+
+    <nav class="navbar navbar-default" role="navigation">
+
+        <div class="collapse navbar-collapse navbar-ex1-collapse">
+            <ul class="nav navbar-nav">
+                <li class="active">
+                    <a class="top_options" id="showpage_1">Bookmarks</a>
+                </li>
+                <li class="active">
+                    <a class="top_options" id="showpage_2">Context menu</a>
+                </li>
+                <li class="dropdown">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown">Options<b
+                        class="caret"></b></a>
+                    <ul class="dropdown-menu">
+                        <li>
+                            <a href="#">Open tab in background&nbsp;<input type="checkbox" id="ask_bg"></a>
+                        </li>
+                        <li>
+                            <a href="#" id="short">Keyboard shortcuts</a>
+                        </li>
+                        <li>
+                            <a href="#" id="about">About Booster PRO</a>
+                        </li>
+                    </ul>
+                </li>
+            </ul>
+            <div class="navbar-header">
+                <div class="navbar-brand">BOOSTER PRO</div>
+            </div>
+        </div>
+    </nav>
+
+    <section>
+        <div class="section" style="visibility: hidden">
+
+
+            <div class="right" style="visibility: hidden; max-height: 0px;">
+                <div align="right">
+                    <h1 class="style1">Booster PRO&nbsp;</h1>
+                    <button class="top_options" id="showpage_1bak">
+                        Customize
+                    </button>
+                    |
+                    <button class="top_options" id="showpage_2bak">
+                        Add from list
+                    </button>
+                    |
+                    <button class="top_options" id="showpage_3">
+                        Other features
+                    </button>
+                    |
+                    <a href="#" id="notabout" style="padding: 5px; text-decoration: none;"> About</a>
+
+
+                </div>
+
+            </div>
+
+            <div class="clear"></div>
+        </div>
+
+        <!-- Beginning of PAGE 1  -->
+        <div class="section">
+            <div id="page1">
+                <div class="section">
+
+                    <input type="hidden" id="numoptions" value="24">
+
+                    <div class="container">
+
+                        <div class="orta">
+
+                        <div class="left">
+
+                            <div class="headerList">General search</div>
+                            <table>
+                                <tr>
+                                    <td>
+                                        <input type="checkbox" id="s1">
+                                    </td>
+                                    <td><a href="#" id="google">Google</a>
+                                        <input type="hidden" id="names1" value="Search Google">
+                                        <input type="hidden" id="links1" value="https://www.google.com/search?sclient=psy-ab&site=&source=hp&btnG=Search&q=%s&oq=&gs_l=&pbx=1">
+                                    </td>
+                                </tr>
+
+
+                                <tr>
+                                    <td>
+                                        <input type="checkbox" id="s2">
+                                    </td>
+                                    <td><a href="#" id="bing">Bing</a>
+                                        <input type="hidden" id="names2" value="Search Bing">
+                                        <input type="hidden" id="links2" value="https://www.bing.com/search?q=%s&go=Submit&qs=bs&form=QBLH">
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td>
+                                        <input type="checkbox" id="s3">
+                                    </td>
+                                    <td><a href="#" id="yandex">Yandex</a>
+                                        <input type="hidden" id="names3" value="Search Yandex">
+                                        <input type="hidden" id="links3" value="https://www.yandex.com/search/?text=%s">
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td>
+                                        <input type="checkbox" id="s4">
+                                    </td>
+                                    <td><a href="#" id="yahoo">Yahoo</a>
+                                        <input type="hidden" id="names4" value="Search Yahoo">
+                                        <input type="hidden" id="links4" value="https://search.yahoo.com/search;_ylt=Al3Nayp__JKml6sP0gcdikybvZx4?p=%s&toggle=1&cop=mss&ei=UTF-8&fr=yfp-t-901&fp=1">
+                                    </td>
+                                </tr>
+
+                            </table>
+                        </div>
+
+                        <div class="left">
+                            <div class="headerList">News</div>
+                            <table>
+
+                                <tr>
+                                    <td>
+                                        <input type="checkbox" id="s5">
+                                    </td>
+                                    <td><a href="#" id="bbc">BBC</a>
+                                        <input type="hidden" id="names5" value="Search in BBC">
+                                        <input type="hidden" id="links5" value="http://search.bbc.co.uk/search?uri=%2F&q=%s&x=0&y=0&suggid=">
+                                    </td>
+                                </tr>
+
+
+                                <tr>
+                                    <td>
+                                        <input type="checkbox" id="s6">
+                                    </td>
+                                    <td><a href="#" id="cnn">CNN</a>
+                                        <input type="hidden" id="names6" value="Search in CNN">
+                                        <input type="hidden" id="links6" value="http://edition.cnn.com/search/?text=%s">
+                                    </td>
+                                </tr>
+
+
+                                <tr>
+                                    <td>
+                                        <input type="checkbox" id="s7">
+                                        <td><a href="#" id="aljazeera">Al Jazeera</a>
+                                            <input type="hidden" id="names7" value="Search in Al Jazeera">
+                                            <input type="hidden" id="links7" value="http://www.aljazeera.com/Search/?q=%s">
+                                        </td>
+                                </tr>
+
+                                <tr>
+                                    <td>
+                                        <input type="checkbox" id="s8">
+                                    </td>
+                                    <td><a href="#" id="reuters">Reuters</a>
+                                        <input type="hidden" id="names8" value="Search in Reuters">
+                                        <input type="hidden" id="links8" value="http://www.reuters.com/search/news?blob=%s">
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+
+                        <div class="left">
+                            <div class="headerList">Social media</div>
+                            <table>
+
+                                <tr>
+                                    <td>
+                                        <input type="checkbox" id="s9">
+                                    </td>
+                                    <td><a href="#" id="twitter">Twitter</a>
+                                        <input type="hidden" id="names9" value="Search in Twitter">
+                                        <input type="hidden" id="links9" value="https://twitter.com/search?q=%s">
+                                    </td>
+                                </tr>
+
+
+                                <tr>
+                                    <td>
+                                        <input type="checkbox" id="s10">
+                                    </td>
+                                    <td><a href="#" id="facebook">Facebook</a>
+                                        <input type="hidden" id="names10" value="Search in Facebook">
+                                        <input type="hidden" id="links10" value="https://www.facebook.com/search/web/direct_search.php?q=%s">
+                                    </td>
+                                </tr>
+
+
+                                <tr>
+                                    <td>
+                                        <input type="checkbox" id="s11">
+                                        <td><a href="#" id="youtube">Youtube</a>
+                                            <input type="hidden" id="names11" value="Search in Youtube">
+                                            <input type="hidden" id="links11" value="https://www.youtube.com/results?search_query=%s">
+                                        </td>
+                                </tr>
+
+                                <tr>
+                                    <td>
+                                        <input type="checkbox" id="s12">
+                                    </td>
+                                    <td><a href="#" id="linkedin">LinkedIn</a>
+                                        <input type="hidden" id="names12" value="Search in LinkedIn">
+                                        <input type="hidden" id="links12" value="https://www.linkedin.com/vsearch/f?type=all&keywords=%s&orig=GLHD&rsid=&pageKey=oz-winner&trkInfo=&search=Search">
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+
+                        <div class="left">
+                            <div class="headerList">Shopping</div>
+                            <table>
+
+                                <tr>
+                                    <td>
+                                        <input type="checkbox" id="s13">
+                                    </td>
+                                    <td><a href="#" id="amazon">Amazon</a>
+                                        <input type="hidden" id="names13" value="Search in Amazon">
+                                        <input type="hidden" id="links13" value="http://www.amazon.com/s/ref=nb_sb_noss?url=search-alias%3Daps&field-keywords=%s">
+                                    </td>
+                                </tr>
+
+
+                                <tr>
+                                    <td>
+                                        <input type="checkbox" id="s14">
+                                    </td>
+                                    <td><a href="#" id="ebay">Ebay</a>
+                                        <input type="hidden" id="names14" value="Search in Ebay">
+                                        <input type="hidden" id="links14" value="http://www.ebay.com/sch/i.html?_from=R40&_trksid=m570.l1313&_nkw=%s&_sacat=0">
+                                    </td>
+                                </tr>
+
+
+                                <tr>
+                                    <td>
+                                        <input type="checkbox" id="s15">
+                                        <td><a href="#" id="alibaba">Alibaba</a>
+                                            <input type="hidden" id="names15" value="Search in Alibaba">
+                                            <input type="hidden" id="links15" value="http://www.alibaba.com/trade/search?fsb=y&IndexArea=product_en&CatId=&SearchText=%s">
+                                        </td>
+                                </tr>
+
+                                <tr>
+                                    <td>
+                                        <input type="checkbox" id="s16">
+                                    </td>
+                                    <td><a href="#" id="walmart">Walmart</a>
+                                        <input type="hidden" id="names16" value="Walmart">
+                                        <input type="hidden" id="links16" value="http://www.walmart.com/search/?query=%s">
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="left">
+                            <div class="headerList">Audio & Video</div>
+                            <table>
+
+                                <tr>
+                                    <td>
+                                        <input type="checkbox" id="s17">
+                                    </td>
+                                    <td><a href="#" id="imdb">IMDB</a>
+                                        <input type="hidden" id="names17" value="Search in IMDB">
+                                        <input type="hidden" id="links17" value="http://www.imdb.com/find?ref_=nv_sr_fn&q=%s&s=all">
+                                    </td>
+                                </tr>
+
+
+                                <tr>
+                                    <td>
+                                        <input type="checkbox" id="s18">
+                                    </td>
+                                    <td><a href="#" id="vimeo">Vimeo</a>
+                                        <input type="hidden" id="names18" value="Search in Vimeo">
+                                        <input type="hidden" id="links18" value="https://vimeo.com/search?q=%s">
+                                    </td>
+                                </tr>
+
+
+                                <tr>
+                                    <td>
+                                        <input type="checkbox" id="s19">
+                                        <td><a href="#" id="bingVideo">Bing Video</a>
+                                            <input type="hidden" id="names19" value="Bing Video">
+                                            <input type="hidden" id="links19" value="http://www.bing.com/?q=%s&go=Submit&qs=bs&form=QBLH&scope=video">
+                                        </td>
+                                </tr>
+
+                                <tr>
+                                    <td>
+                                        <input type="checkbox" id="s20">
+                                    </td>
+                                    <td><a href="#" id="tunein">TuneIn</a>
+                                        <input type="hidden" id="names20" value="TuneIn">
+                                        <input type="hidden" id="links20" value="http://tunein.com/search/?query=%s">
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                        
+                         <div class="left">
+                            <div class="headerList">Other</div>
+                            <table>
+
+                                <tr>
+                                    <td>
+                                        <input type="checkbox" id="s21">
+                                    </td>
+                                    <td><a href="#" id="gtranslate">Google Translate</a>
+                                        <input type="hidden" id="names21" value="Google translate">
+                                        <input type="hidden" id="links21" value="https://translate.google.com/#auto/en/%s">
+                                    </td>
+                                </tr>
+
+                                
+                                <tr>
+                                    <td>
+                                        <input type="checkbox" id="s22">
+                                    </td>
+                                    <td><a href="#" id="quora">Quora</a>
+                                        <input type="hidden" id="names22" value="Quora">
+                                        <input type="hidden" id="links22" value="https://www.quora.com/search?q=%s">
+                                    </td>
+                                </tr>
+
+                     
+                                <tr>
+                                    <td>
+                                        <input type="checkbox" id="s23">
+                                        <td><a href="#" id="wikipedia">Wikipedia</a>
+                                            <input type="hidden" id="names23" value="Search in Wikipedia">
+                                            <input type="hidden" id="links23" value="http://en.wikipedia.org/w/index.php?search=%s&title=Special%3ASearch&go=Go">
+                                        </td>
+                                </tr>
+
+                                <tr>
+                                    <td>
+                                        <input type="checkbox" id="s24">
+                                    </td>
+                                    <td><a href="#" id="reddit">Reddit</a>
+                                        <input type="hidden" id="names24" value="Search in Reddit">
+                                        <input type="hidden" id="links24" value="https://www.reddit.com/search?q=%s">
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                            <div class="clear"></div>
+                        </div>
+
+
+                        <button id="AddFromList" type="button" class="btn btn-warning">Add checked to Context menu</button>
+
+                        <div id="status_addfromlist" style=" margin-top: 10px" ;></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Beginning of PAGE 2  -->
+        <div id="page2">
+
+            <div align="center">
+
+                <input type='text' id='newname' size='20' maxlength='30' placeholder="New menu name" style="width: 120px;">
+
+                <input type='text' id='newlink' size='80' maxlength='500' style="width: 250px;" placeholder="URL with SELECTION in place of query">
+
+                <input type='submit' class="btn btn-success btn-xs"  value="Add" id='add_option' size='10' maxlength='30'>
+
+
+                <input type="hidden" value="0" id="curnum">
+
+                <hr>
+
+                <ul id="options_list_ul">
+                </ul>
+                <br>
+
+                <button id="save_options" class="btn btn-success btn-sm" >
+                    Make default
+                </button>
+                <button id="resetdefault" class="btn btn-success btn-sm" >
+                    Load default
+                </button>
+                <div style="display:none">
+                    <div id="status"></div>
+                </div>
+
+                <!--The below code is to save the menu URLs and names as a string -->
+                <div id="blabla" style="display: none;">
+                    <textarea id="exporttext" cols="0" rows="0"></textarea>
+                    <input type="checkbox" id="ask_next">
+                </div>
+
+            </div>
+        </div>
+
+    </section>
+
+
+</body>
+
+</html>

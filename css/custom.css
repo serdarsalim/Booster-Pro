@@ -1,0 +1,290 @@
+/**
+ *
+ * Chrome Extension Twitter Bootstrap 3
+ * Custom CSS
+ *	
+ **/
+
+/* Popup height, width and background color */
+body, section {
+    width: 530px;
+    height: 450px;
+    overflow-x: hidden;
+    background: white; /* Chrome 10+, Saf5.1+ */
+    font-family: "Trebuchet MS", Helvetica, sans-serif;
+
+}
+
+.navbar-default .navbar-nav > .active > a, .navbar-default .navbar-nav > .active > a:hover, .navbar-default .navbar-nav > .active > a:focus {
+
+    color: #696868;
+}
+
+/* Main box. This is where the content is. */
+section {
+    padding: 5px;
+}
+
+.navbar {
+    margin-bottom: 2px;
+    background-color: rgb(115, 220, 250);
+}
+
+/* Navigation elements */
+
+/* Brand header color */
+.navbar-default .navbar-brand, .navbar-default .navbar-brand:hover {
+
+    color: #FF3939;
+    font-weight: bold;
+    cursor: default;
+    font-family: Tahoma, Geneva, sans-serif;
+    text-shadow:rgba(255,255,255,.1) -1px -1px 1px,rgba(0,0,0,.5) 1px 1px 1px;
+}
+
+/* Navigation headers background color */
+.navbar-default .navbar-nav > .active > a, .navbar-default, .navbar-default .navbar-nav > .active > a:focus {
+
+    background-color: snow;
+    cursor: pointer;
+
+}
+
+/* First two navigation headers hover color  */
+
+.navbar-default .navbar-nav > .active > a:hover {
+
+    color: chocolate;
+    background-color: snow;
+    cursor: pointer;
+
+}
+
+.navbar-default .navbar-nav > .active  {
+
+    color: chocolate;
+    background-color: snow;
+    cursor: pointer;
+
+}
+
+/* Dropdown menu header hover color  */
+
+.navbar-nav > :hover, .navbar-default .navbar-nav > .open > a:focus {
+
+    color: chocolate !important;
+    background-color: snow;
+}
+
+/* Scroll Bar */
+::-webkit-scrollbar {
+    width: 6px;
+}
+
+::-webkit-scrollbar-track {
+    -webkit-box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.3);
+}
+
+::-webkit-scrollbar-thumb, ::-webkit-scrollbar-thumb:window-inactive {
+    background-color: #2698fa;
+}
+
+div {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+#page1 > input:first-child {
+    margin-top: 20px;
+}
+
+.listItemName {
+    width: 160px;
+    margin-left: 10px;
+
+}
+
+.listItemLink {
+    width: 140px;
+
+}
+
+.navbar-header {
+
+    float: right;
+}
+
+hr {
+    border: 0;
+    height: 2px;
+    background-image: -webkit-linear-gradient(left, rgba(0, 0, 0, 0), rgb(255, 69, 32), rgba(0, 0, 0, 0));
+    background-image: -moz-linear-gradient(left, rgba(0, 0, 0, 0), rgb(65, 173, 42), rgba(0, 0, 0, 0));
+    background-image: -ms-linear-gradient(left, rgba(0, 0, 0, 0), rgb(88, 225, 24), rgba(0, 0, 0, 0));
+    background-image: -o-linear-gradient(left, rgba(0, 0, 0, 0), rgb(55, 151, 0), rgba(0, 0, 0, 0));
+}
+
+.btn-warning {
+
+    margin: 20px 0 0 0;
+   width: 100%;
+}
+
+.btn {
+
+    margin-bottom: 5px;
+}
+
+.btn-success {
+    color: #fff;
+    background-color: #f0ad4e;
+    border-color: #eea236;
+}
+.btn-success:hover {
+    color: #fff;
+    background-color: #d58512;
+    border-color: #d58512;
+}
+
+button:active {
+    position: relative;
+    top: 1px;
+}
+
+.input-lg {
+
+    height: auto;
+
+}
+
+/*Main box for menu list */
+
+div.container {
+
+    width: auto;
+
+}
+
+/* Add more menu container boxes */
+
+/*
+div.left, div.right {
+    width: 150px;
+    float: left;
+    margin: 1% 0 0% 0%;
+    padding: 0% 3% 3% 0%;
+    color: #2698fa;
+    cursor: default;
+}
+*/
+
+div.left {
+    width: 150px;
+    display: inline-block;
+    vertical-align: middle;
+    margin: 1% 0 0% 0%;
+    padding: 0% 3% 3% 0%;
+    margin-left: 6px;
+}
+
+/*Add more menus list headers */
+
+.headerList {
+
+    font-style: italic;
+    color: sandybrown;
+    margin-bottom: 10px;
+
+}
+
+/* This is above save button to clear all styling above */
+
+div.clear {
+    height: 0;
+    font-size: 1px;
+    margin: 0;
+    padding: 0;
+    line-height: 0;
+    clear: both;
+}
+
+/* Link title colors in add more list menu. */
+
+a:link, a:visited, a:active {
+    text-decoration: none;
+    color: #696868;
+}
+
+a:hover {
+    text-decoration: none;
+    color: #1c9de0;
+}
+
+/* The text-color and Padding in list elements */
+td {
+    border-color: #EFEFEF;
+    padding: 2px;
+    color: #0b3d5d;
+}
+
+
+
+/* checkbox style */
+
+.checkStyle {
+    margin: 2px 10px 0px !important;
+    height: 14px;
+    cursor: pointer;
+}
+
+.regular-button {
+    width: auto;
+    height: 20px;
+    padding: 0 5px;
+    background-repeat: no-repeat;
+    cursor: pointer;
+}
+
+/* drag menu div style*/
+
+ul#options_list_ul {
+    list-style-type: none;
+    padding: 10px;
+    margin: 0px;
+
+}
+
+.dragIconContainer {
+    width: 18px;
+    height: 20px;
+    display: inline-flex;
+}
+
+.dragIcon {
+    width: 30px;
+    height: 20px;
+    background-image: url(vertical.png);
+    background-size: 22px 22px;
+    background-repeat: no-repeat;
+    cursor: move;
+    display: inline-flex;
+    position: relative;
+    top: 4px;
+}
+
+.removeIcon {
+    width: 20px;
+    height: 16px;
+    background-repeat: no-repeat;
+    cursor: pointer;
+}
+
+input {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    outline: 0;
+    font-size: 100%;
+    vertical-align: baseline;
+    background: transparent;
+}

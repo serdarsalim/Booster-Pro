@@ -1,0 +1,107 @@
+:root {
+  --bg: #f3f7fc;
+  --panel: #ffffff;
+  --ink: #172133;
+  --muted: #596982;
+  --line: #d2deee;
+  --primary: #175bd8;
+  --primary-ink: #ffffff;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "Avenir Next", "Helvetica Neue", "Segoe UI", sans-serif;
+}
+
+.wrap {
+  width: 780px;
+  max-width: 780px;
+  padding: 16px;
+  display: grid;
+  gap: 12px;
+}
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+h1 {
+  margin: 0;
+  font-size: 34px;
+  line-height: 1.1;
+}
+
+.primary {
+  border: none;
+  border-radius: 10px;
+  background: var(--primary);
+  color: var(--primary-ink);
+  font-size: 14px;
+  font-weight: 600;
+  padding: 10px 14px;
+  cursor: pointer;
+}
+
+.engine-panel {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel);
+  padding: 14px;
+  overflow: hidden;
+}
+
+.engine-columns {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.engine-col {
+  padding: 2px 8px 2px 0;
+  min-width: 0;
+}
+
+.engine-col:nth-child(2),
+.engine-col:nth-child(3) {
+  border-left: 1px solid var(--line);
+  padding-left: 12px;
+}
+
+.engine-col h3 {
+  margin: 0 0 10px;
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.engine-list {
+  display: grid;
+  gap: 6px;
+}
+
+.engine-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  font-size: 14px;
+}
+
+.engine-item input {
+  width: 16px;
+  height: 16px;
+}
+
+.engine-item span {
+  white-space: nowrap;
+}

@@ -1,0 +1,52 @@
+{
+  "manifest_version": 3,
+  "name": "Booster PRO",
+  "description": "Modern right-click and left-click context search with AI-first routing and smart search stacks.",
+  "version": "2.0.0",
+  "permissions": [
+    "contextMenus",
+    "activeTab",
+    "tabs",
+    "clipboardRead",
+    "clipboardWrite",
+    "storage"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background/sw.js",
+    "type": "module"
+  },
+  "icons": {
+    "16": "images/16.png",
+    "48": "images/48.png",
+    "128": "images/128.png"
+  },
+  "commands": {
+    "close-right-tabs": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+9"
+      },
+      "description": "Close Tabs to the Right"
+    },
+    "close-other-tabs": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+8"
+      },
+      "description": "Close Other Tabs"
+    },
+    "toggle-pin": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+P"
+      },
+      "description": "Pin Tab"
+    }
+  },
+  "action": {
+    "default_icon": "images/16.png",
+    "default_title": "Booster PRO",
+    "default_popup": "ui/command-center.html"
+  },
+  "options_page": "ui/command-center.html"
+}
