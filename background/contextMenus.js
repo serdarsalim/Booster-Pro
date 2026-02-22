@@ -18,9 +18,12 @@ export async function rebuildContextMenus(settings) {
 
   const selectedEngineIds = (settings.enabledEngineIds && settings.enabledEngineIds.length)
     ? settings.enabledEngineIds
-    : ["perplexity", "google", "bing"];
+    : [];
 
-  const engines = getEnginesByIds(selectedEngineIds);
+  const engines = getEnginesByIds(selectedEngineIds, settings);
+  if (!engines.length) {
+    return;
+  }
 
   chrome.contextMenus.create({
     id: MENU_IDS.ROOT,

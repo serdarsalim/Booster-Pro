@@ -1,32 +1,65 @@
-import { ENGINE_IDS } from "./engines.js";
+import { BUILTIN_ENGINE_IDS, sanitizeCustomEngine } from "./engines.js";
 
 export const DEFAULT_SETTINGS = {
-  schemaVersion: 2,
-  enabledEngineIds: ["perplexity", "google", "bing", "duckduckgo", "chatgpt"],
+  schemaVersion: 3,
+  enabledEngineIds: BUILTIN_ENGINE_IDS.slice(),
+  hiddenBuiltinIds: [],
+  customEngines: [],
   behavior: {
     openInBackground: false,
     openNextToCurrent: true
   }
 };
 
-function dedupeEngineIds(engineIds) {
-  if (!Array.isArray(engineIds)) {
+function dedupeIds(values, allowedSet) {
+  if (!Array.isArray(values)) {
+    return [];
+  }
+  const seen = new Set();
+  const out = [];
+  values.forEach((value) => {
+    if (typeof value !== "string") {
+      return;
+    }
+    if (allowedSet && !allowedSet.has(value)) {
+      return;
+    }
+    if (!seen.has(value)) {
+      seen.add(value);
+      out.push(value);
+    }
+  });
+  return out;
+}
+
+function sanitizeCustomEngines(rawCustomEngines) {
+  if (!Array.isArray(rawCustomEngines)) {
     return [];
   }
 
   const seen = new Set();
-  const result = [];
-  engineIds.forEach((engineId) => {
-    if (ENGINE_IDS.includes(engineId) && !seen.has(engineId)) {
-      seen.add(engineId);
-      result.push(engineId);
+  const custom = [];
+  rawCustomEngines.forEach((rawEngine) => {
+    const engine = sanitizeCustomEngine(rawEngine);
+    if (!engine || seen.has(engine.id)) {
+      return;
     }
+    seen.add(engine.id);
+    custom.push(engine);
   });
-  return result;
+  return custom;
 }
 
-function migrateEnabledIds(settings) {
-  const direct = dedupeEngineIds(settings.enabledEngineIds);
+function dedupeEngineIds(engineIds, allowedIds) {
+  if (!Array.isArray(engineIds)) {
+    return [];
+  }
+
+  return dedupeIds(engineIds, new Set(allowedIds));
+}
+
+function migrateEnabledIds(settings, allowedIds) {
+  const direct = dedupeEngineIds(settings.enabledEngineIds, allowedIds);
   if (direct.length) {
     return direct;
   }
@@ -34,18 +67,24 @@ function migrateEnabledIds(settings) {
   // Backward compatibility with earlier profile-based storage.
   const profileId = settings.activeProfileId;
   const profile = settings.profiles && settings.profiles[profileId];
-  const migrated = dedupeEngineIds(profile && profile.engineIds);
+  const migrated = dedupeEngineIds(profile && profile.engineIds, allowedIds);
   if (migrated.length) {
     return migrated;
   }
 
-  return DEFAULT_SETTINGS.enabledEngineIds.slice();
+  return dedupeEngineIds(DEFAULT_SETTINGS.enabledEngineIds, allowedIds);
 }
 
 export function sanitizeSettings(rawSettings) {
   const settings = rawSettings || {};
+  const customEngines = sanitizeCustomEngines(settings.customEngines);
 
-  const enabledEngineIds = migrateEnabledIds(settings);
+  const hiddenBuiltinIds = dedupeIds(settings.hiddenBuiltinIds, new Set(BUILTIN_ENGINE_IDS));
+  const visibleBuiltinIds = BUILTIN_ENGINE_IDS.filter((id) => !hiddenBuiltinIds.includes(id));
+  const customEngineIds = customEngines.map((engine) => engine.id);
+  const allowedEngineIds = [...visibleBuiltinIds, ...customEngineIds];
+
+  const enabledEngineIds = migrateEnabledIds(settings, allowedEngineIds);
 
   const behavior = {
     openInBackground: Boolean(settings.behavior && settings.behavior.openInBackground),
@@ -58,6 +97,8 @@ export function sanitizeSettings(rawSettings) {
   return {
     schemaVersion: DEFAULT_SETTINGS.schemaVersion,
     enabledEngineIds,
+    hiddenBuiltinIds,
+    customEngines,
     behavior
   };
 }

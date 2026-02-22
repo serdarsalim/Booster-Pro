@@ -3,15 +3,25 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Booster PRO - Quick Search Settings</title>
+  <title>Booster Pro Menu</title>
   <link rel="stylesheet" href="./command-center.css">
 </head>
 <body>
-  <main class="wrap" aria-label="Booster PRO Quick Search Settings">
+  <main class="wrap" aria-label="Booster Pro Menu">
     <header class="topbar">
-      <h1>Quick Search Settings</h1>
-      <button id="save-settings" class="primary" type="button">Save</button>
+      <div class="brand">
+        <img src="../images/16.png" alt="" class="brand-icon">
+        <h1>Booster Pro Menu</h1>
+      </div>
+      <div class="top-actions">
+        <button id="open-shortcuts" class="ghost" type="button">Shortcuts</button>
+        <button id="reset-defaults" class="ghost" type="button">Reset Default</button>
+      </div>
     </header>
+
+    <section class="query-row">
+      <input id="query-input" type="text" placeholder="Type your search query">
+    </section>
 
     <section class="engine-panel">
       <div class="engine-columns">
@@ -26,10 +36,47 @@
         </div>
 
         <div class="engine-col">
-          <h3>Knowledge + Dev</h3>
-          <div id="knowledge-engines" class="engine-list"></div>
+          <h3>Tech</h3>
+          <div id="tech-engines" class="engine-list"></div>
+        </div>
+
+        <div class="engine-col">
+          <h3>Shopping</h3>
+          <div id="shopping-engines" class="engine-list"></div>
+        </div>
+
+        <div class="engine-col">
+          <h3>News</h3>
+          <div id="news-engines" class="engine-list"></div>
+        </div>
+
+        <div class="engine-col">
+          <h3>Research</h3>
+          <div id="research-engines" class="engine-list"></div>
         </div>
       </div>
+    </section>
+
+    <section class="engine-panel social-panel">
+      <div class="engine-col">
+        <h3>Social Media</h3>
+        <div id="social-engines" class="engine-list"></div>
+      </div>
+    </section>
+
+    <section class="custom-row">
+      <input id="custom-name" type="text" placeholder="Engine name">
+      <input id="custom-url" type="text" placeholder="Search URL with %s">
+      <select id="custom-category">
+        <option value="AI">AI</option>
+        <option value="Web">Web</option>
+        <option value="Tech">Tech</option>
+        <option value="Shopping">Shopping</option>
+        <option value="News">News</option>
+        <option value="Research">Research</option>
+        <option value="Social">Social</option>
+      </select>
+      <button id="add-custom" class="primary" type="button">Add</button>
     </section>
   </main>
 

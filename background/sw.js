@@ -23,7 +23,7 @@ async function runSearch({ query, engineId, engineIds }) {
     targetEngineIds = (settings.enabledEngineIds || []).slice(0, 1);
   }
 
-  const entries = buildSearchUrls(query, targetEngineIds);
+  const entries = buildSearchUrls(query, targetEngineIds, settings);
   await openUrls(entries, settings);
 
   return {
