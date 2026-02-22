@@ -98,7 +98,17 @@
         <h3>Engine List</h3>
         <div class="modal-grid">
           <input id="shared-search-input" type="text" placeholder="Filter engine list">
-          <select id="shared-engine-select" size="10"></select>
+          <div class="shared-engine-table-wrap" role="region" aria-label="Shared engine list">
+            <table class="shared-engine-table">
+              <thead>
+                <tr>
+                  <th class="shared-col-category" scope="col">Category</th>
+                  <th scope="col">Name</th>
+                </tr>
+              </thead>
+              <tbody id="shared-engine-table-body"></tbody>
+            </table>
+          </div>
           <button id="add-shared-engine" class="primary" type="button">Add Selected Engine</button>
         </div>
       </section>

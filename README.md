@@ -12,12 +12,11 @@ Booster PRO is a Chrome Manifest V3 extension for fast search from selected text
 - Left-click quick search support for selected content
 - Built-in AI, web, research, social, productivity, and utilities engine groups
 
-## Default Enabled Engines
-On fresh install/reset, these are enabled by default:
-- Perplexity
-- Google
-- YouTube
-- Reddit
+## Default Starter Layout
+On fresh install/reset, the popup starts with 6 categories (3 engines each):
+- Column 1: `AI` (ChatGPT, Perplexity, You.com), `Social Media` (YouTube, Reddit, Twitter/X)
+- Column 2: `Web` (Google, Bing, DuckDuckGo), `Productivity` (Gmail, Google Drive, Notion)
+- Column 3: `Utilities` (Wikipedia, Google Maps, Grokopedia), `News` (Google News, Reuters, BBC)
 
 ## Project Structure
 - `background/` service worker, routing, context menus, commands, storage

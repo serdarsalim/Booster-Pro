@@ -4,7 +4,20 @@ import { DEFAULT_SETTINGS } from "../shared/defaultSettings.js";
 const QUERY_STORAGE_KEY = "boosterPersistedQuery";
 const LAYOUT_COLUMN_COUNT = 3;
 
-const SHARED_TYPE_TO_CATEGORY = Object.freeze({
+const SHARED_DISPLAY_CATEGORY_ORDER = Object.freeze([
+  "AI",
+  "Web",
+  "Social",
+  "Developer",
+  "Research",
+  "News",
+  "Productivity",
+  "Shopping",
+  "Media",
+  "Entertainment"
+]);
+
+const SHARED_TYPE_TO_STORAGE_CATEGORY = Object.freeze({
   AI: "AI",
   Search: "Web",
   News: "News",
@@ -13,19 +26,45 @@ const SHARED_TYPE_TO_CATEGORY = Object.freeze({
   Social: "Social",
   Shopping: "Shopping",
   Translate: "Utilities",
+  Image: "Utilities",
+  Video: "Utilities",
+  Movie: "Social",
+  ACG: "Social",
   "Search by image": "Utilities",
   "Search in page": "Utilities",
-  Music: "Social",
+  Music: "Utilities",
   APP: "Utilities",
-  Movie: "Social",
-  Video: "Social",
   "Web cache": "Utilities",
   Assit: "Productivity",
-  ACG: "Social",
   Wiki: "Research",
   "E-book": "Research",
   Download: "Utilities",
   Page: "Utilities"
+});
+
+const SHARED_TYPE_TO_DISPLAY_CATEGORY = Object.freeze({
+  AI: "AI",
+  Search: "Web",
+  Social: "Social",
+  Develop: "Developer",
+  Scholar: "Research",
+  Wiki: "Research",
+  "E-book": "Research",
+  News: "News",
+  Assit: "Productivity",
+  Translate: "Productivity",
+  APP: "Productivity",
+  "Search in page": "Productivity",
+  Shopping: "Shopping",
+  Image: "Media",
+  Video: "Media",
+  Music: "Media",
+  "Search by image": "Media",
+  Movie: "Entertainment",
+  ACG: "Entertainment",
+  Download: "Web",
+  "Web cache": "Web",
+  Page: "Web"
 });
 
 const CATEGORY_COLUMN_INDEX = Object.freeze({
@@ -51,6 +90,7 @@ let activeAddSectionId = null;
 let sharedCatalog = [];
 let sharedCatalogLoaded = false;
 let sharedCatalogByKey = new Map();
+let selectedSharedKey = null;
 
 const dragState = {
   engineId: null,
@@ -358,18 +398,7 @@ function setActiveView(viewId) {
 }
 
 function syncViewHeight() {
-  const menuView = document.getElementById("menu-view");
-  const settingsView = document.getElementById("settings-view");
-  if (!(menuView instanceof HTMLElement) || !(settingsView instanceof HTMLElement)) {
-    return;
-  }
-  const menuHeight = menuView.scrollHeight;
-  if (!menuHeight) {
-    return;
-  }
-  const lockedHeight = `${menuHeight + 20}px`;
-  menuView.style.setProperty("--view-height", lockedHeight);
-  settingsView.style.setProperty("--view-height", lockedHeight);
+  // Fixed-height popup mode; no dynamic syncing needed.
 }
 
 function renderSettingsForm() {
@@ -634,11 +663,14 @@ function renderSection(section, engineMap, enabledSet) {
     `
     : `<h3 class="category-title">${escapeHtml(section.name)}</h3>`;
 
+  const headerDelete = editMode
+    ? `<button type="button" class="remove-category-btn" data-remove-section="${escapeHtml(section.id)}" aria-label="Remove category">&times;</button>`
+    : "";
+
   const controls = editMode
     ? `
       <div class="category-actions">
         <button type="button" class="add-more-btn" data-add-more-section="${escapeHtml(section.id)}">+ Add more</button>
-        <button type="button" class="remove-category-btn" data-remove-section="${escapeHtml(section.id)}" aria-label="Remove category">&times;</button>
       </div>
     `
     : "";
@@ -648,6 +680,7 @@ function renderSection(section, engineMap, enabledSet) {
       <header class="category-header">
         <div class="category-header-row">
           ${headerTitle}
+          ${headerDelete}
         </div>
         ${controls}
       </header>
@@ -752,12 +785,25 @@ async function doneEditMode() {
   renderSettingsForm();
 }
 
-function mapSharedTypeToCategory(type) {
-  const mapped = SHARED_TYPE_TO_CATEGORY[type];
+function mapSharedTypeToStorageCategory(type) {
+  const mapped = SHARED_TYPE_TO_STORAGE_CATEGORY[type];
   if (mapped && CATEGORY_ORDER.includes(mapped)) {
     return mapped;
   }
   return "Web";
+}
+
+function mapSharedTypeToDisplayCategory(type) {
+  const mapped = SHARED_TYPE_TO_DISPLAY_CATEGORY[type];
+  if (mapped && SHARED_DISPLAY_CATEGORY_ORDER.includes(mapped)) {
+    return mapped;
+  }
+  return "Web";
+}
+
+function getSharedDisplayCategorySortIndex(category) {
+  const index = SHARED_DISPLAY_CATEGORY_ORDER.indexOf(category);
+  return index === -1 ? SHARED_DISPLAY_CATEGORY_ORDER.length : index;
 }
 
 function isCompatibleSharedEntry(site) {
@@ -807,13 +853,16 @@ async function loadSharedCatalog() {
         dedupe.add(dedupeKey);
 
         const key = `shared-${slugify(type)}-${slugify(name)}-${sharedCatalog.length + 1}`;
+        const displayCategory = mapSharedTypeToDisplayCategory(type);
         const entry = {
           key,
           type,
-          category: mapSharedTypeToCategory(type),
+          category: mapSharedTypeToStorageCategory(type),
+          displayCategory,
           name,
           urlTemplate,
-          label: `${name} (${type})`
+          label: `${displayCategory} | ${name}`,
+          searchText: `${displayCategory} ${name} ${type}`.toLowerCase()
         };
 
         sharedCatalog.push(entry);
@@ -821,7 +870,18 @@ async function loadSharedCatalog() {
       });
     });
 
-    sharedCatalog.sort((a, b) => a.label.localeCompare(b.label));
+    sharedCatalog.sort((a, b) => {
+      const categoryDelta = getSharedDisplayCategorySortIndex(a.displayCategory)
+        - getSharedDisplayCategorySortIndex(b.displayCategory);
+      if (categoryDelta !== 0) {
+        return categoryDelta;
+      }
+      const nameDelta = a.name.localeCompare(b.name);
+      if (nameDelta !== 0) {
+        return nameDelta;
+      }
+      return a.type.localeCompare(b.type);
+    });
   } catch (_error) {
     sharedCatalog = [];
     sharedCatalogByKey = new Map();
@@ -830,29 +890,37 @@ async function loadSharedCatalog() {
 
 function refreshSharedSelect() {
   const input = document.getElementById("shared-search-input");
-  const select = document.getElementById("shared-engine-select");
-  if (!(input instanceof HTMLInputElement) || !(select instanceof HTMLSelectElement)) {
+  const tableBody = document.getElementById("shared-engine-table-body");
+  if (!(input instanceof HTMLInputElement) || !(tableBody instanceof HTMLElement)) {
     return;
   }
 
   const keyword = input.value.trim().toLowerCase();
   const filtered = keyword
-    ? sharedCatalog.filter((entry) => entry.label.toLowerCase().includes(keyword))
+    ? sharedCatalog.filter((entry) => entry.searchText.includes(keyword))
     : sharedCatalog;
 
-  select.innerHTML = "";
-  const fragment = document.createDocumentFragment();
-  filtered.forEach((entry, index) => {
-    const option = document.createElement("option");
-    option.value = entry.key;
-    option.textContent = entry.label;
-    option.title = entry.urlTemplate;
-    if (index === 0) {
-      option.selected = true;
-    }
-    fragment.appendChild(option);
-  });
-  select.appendChild(fragment);
+  if (!filtered.length) {
+    selectedSharedKey = null;
+    tableBody.innerHTML = "<tr class=\"shared-empty\"><td colspan=\"2\">No engines found</td></tr>";
+    return;
+  }
+
+  if (!selectedSharedKey || !filtered.some((entry) => entry.key === selectedSharedKey)) {
+    selectedSharedKey = filtered[0].key;
+  }
+
+  tableBody.innerHTML = filtered
+    .map((entry) => {
+      const selectedClass = entry.key === selectedSharedKey ? " is-selected" : "";
+      return `
+        <tr class="shared-row${selectedClass}" data-shared-key="${escapeHtml(entry.key)}" title="${escapeHtml(entry.urlTemplate)}">
+          <td>${escapeHtml(entry.displayCategory)}</td>
+          <td>${escapeHtml(entry.name)}</td>
+        </tr>
+      `;
+    })
+    .join("");
 }
 
 function getSectionName(targetSettings, sectionId) {
@@ -887,6 +955,7 @@ async function openAddMoreModal(sectionId) {
   if (searchInput instanceof HTMLInputElement) {
     searchInput.value = "";
   }
+  selectedSharedKey = null;
 
   await loadSharedCatalog();
   refreshSharedSelect();
@@ -900,6 +969,7 @@ function closeAddMoreModal() {
     modal.hidden = true;
   }
   activeAddSectionId = null;
+  selectedSharedKey = null;
 }
 
 function createUniqueCustomId(name, targetSettings) {
@@ -992,12 +1062,11 @@ function addSharedEngineToActiveSection() {
     return;
   }
 
-  const select = document.getElementById("shared-engine-select");
-  if (!(select instanceof HTMLSelectElement) || !select.value) {
+  if (!selectedSharedKey) {
     return;
   }
 
-  const entry = sharedCatalogByKey.get(select.value);
+  const entry = sharedCatalogByKey.get(selectedSharedKey);
   if (!entry) {
     return;
   }
@@ -1141,6 +1210,16 @@ function bindEvents() {
     const modal = document.getElementById("add-more-modal");
     if (modal instanceof HTMLElement && !modal.hidden && target === modal) {
       closeAddMoreModal();
+      return;
+    }
+
+    const sharedRow = target.closest("[data-shared-key]");
+    if (sharedRow instanceof HTMLElement) {
+      const key = sharedRow.getAttribute("data-shared-key");
+      if (key) {
+        selectedSharedKey = key;
+        refreshSharedSelect();
+      }
       return;
     }
 

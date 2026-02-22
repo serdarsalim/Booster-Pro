@@ -4,8 +4,44 @@ const LEGACY_BUILTIN_ID_MAP = Object.freeze({
   gemini: "youcom"
 });
 
-const DEFAULT_ENABLED_BUILTIN_IDS = ["perplexity", "google", "youtube", "reddit"];
 const LAYOUT_COLUMN_COUNT = 3;
+const STARTER_VISIBLE_BUILTIN_IDS = Object.freeze([
+  "chatgpt",
+  "perplexity",
+  "youcom",
+  "youtube",
+  "reddit",
+  "twitter",
+  "google",
+  "bing",
+  "duckduckgo",
+  "gmail",
+  "google-drive",
+  "notion",
+  "wikipedia",
+  "google-maps",
+  "grokopedia",
+  "google-news",
+  "reuters",
+  "bbc"
+]);
+
+const DEFAULT_ENABLED_BUILTIN_IDS = STARTER_VISIBLE_BUILTIN_IDS;
+const DEFAULT_HIDDEN_BUILTIN_IDS = BUILTIN_ENGINE_IDS.filter((id) => !STARTER_VISIBLE_BUILTIN_IDS.includes(id));
+const DEFAULT_LAYOUT_COLUMNS = Object.freeze([
+  [
+    { id: "ai", name: "AI", engineIds: ["chatgpt", "perplexity", "youcom"] },
+    { id: "social-media", name: "Social Media", engineIds: ["youtube", "reddit", "twitter"] }
+  ],
+  [
+    { id: "web", name: "Web", engineIds: ["google", "bing", "duckduckgo"] },
+    { id: "productivity", name: "Productivity", engineIds: ["gmail", "google-drive", "notion"] }
+  ],
+  [
+    { id: "utilities", name: "Utilities", engineIds: ["wikipedia", "google-maps", "grokopedia"] },
+    { id: "news", name: "News", engineIds: ["google-news", "reuters", "bbc"] }
+  ]
+]);
 
 const DEFAULT_HEADER_LABELS = Object.freeze({
   AI: "AI",
@@ -34,11 +70,14 @@ const CATEGORY_COLUMN_INDEX = Object.freeze({
 export const DEFAULT_SETTINGS = {
   schemaVersion: 4,
   enabledEngineIds: DEFAULT_ENABLED_BUILTIN_IDS.filter((id) => BUILTIN_ENGINE_IDS.includes(id)),
-  hiddenBuiltinIds: [],
+  hiddenBuiltinIds: DEFAULT_HIDDEN_BUILTIN_IDS,
   customEngines: [],
   engineLabelOverrides: {},
   headerLabels: {},
-  layoutColumns: Array.from({ length: LAYOUT_COLUMN_COUNT }, () => []),
+  layoutColumns: DEFAULT_LAYOUT_COLUMNS.map((column) => column.map((section) => ({
+    ...section,
+    engineIds: section.engineIds.filter((id) => BUILTIN_ENGINE_IDS.includes(id))
+  }))),
   behavior: {
     openInBackground: false,
     openNextToCurrent: true
