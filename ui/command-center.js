@@ -112,7 +112,7 @@ function syncViewHeight() {
   if (!menuHeight) {
     return;
   }
-  const lockedHeight = `${menuHeight}px`;
+  const lockedHeight = `${menuHeight + 20}px`;
   menuView.style.setProperty("--view-height", lockedHeight);
   settingsView.style.setProperty("--view-height", lockedHeight);
 }

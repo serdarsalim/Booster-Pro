@@ -132,6 +132,11 @@ button {
   display: grid;
   gap: 12px;
   min-height: var(--view-height, auto);
+  align-content: start;
+}
+
+#menu-view {
+  gap: 8px;
 }
 
 .page-view[hidden] {
