@@ -1,8 +1,14 @@
 import { BUILTIN_ENGINE_IDS, sanitizeCustomEngine } from "./engines.js";
 
+const LEGACY_BUILTIN_ID_MAP = Object.freeze({
+  gemini: "youcom"
+});
+
+const DEFAULT_ENABLED_BUILTIN_IDS = ["perplexity", "google", "youtube", "reddit"];
+
 export const DEFAULT_SETTINGS = {
   schemaVersion: 3,
-  enabledEngineIds: BUILTIN_ENGINE_IDS.slice(),
+  enabledEngineIds: DEFAULT_ENABLED_BUILTIN_IDS.filter((id) => BUILTIN_ENGINE_IDS.includes(id)),
   hiddenBuiltinIds: [],
   customEngines: [],
   behavior: {
@@ -58,8 +64,20 @@ function dedupeEngineIds(engineIds, allowedIds) {
   return dedupeIds(engineIds, new Set(allowedIds));
 }
 
+function remapLegacyBuiltinIds(values) {
+  if (!Array.isArray(values)) {
+    return [];
+  }
+  return values.map((value) => {
+    if (typeof value !== "string") {
+      return value;
+    }
+    return LEGACY_BUILTIN_ID_MAP[value] || value;
+  });
+}
+
 function migrateEnabledIds(settings, allowedIds) {
-  const direct = dedupeEngineIds(settings.enabledEngineIds, allowedIds);
+  const direct = dedupeEngineIds(remapLegacyBuiltinIds(settings.enabledEngineIds), allowedIds);
   if (direct.length) {
     return direct;
   }
@@ -67,7 +85,7 @@ function migrateEnabledIds(settings, allowedIds) {
   // Backward compatibility with earlier profile-based storage.
   const profileId = settings.activeProfileId;
   const profile = settings.profiles && settings.profiles[profileId];
-  const migrated = dedupeEngineIds(profile && profile.engineIds, allowedIds);
+  const migrated = dedupeEngineIds(remapLegacyBuiltinIds(profile && profile.engineIds), allowedIds);
   if (migrated.length) {
     return migrated;
   }
@@ -79,7 +97,7 @@ export function sanitizeSettings(rawSettings) {
   const settings = rawSettings || {};
   const customEngines = sanitizeCustomEngines(settings.customEngines);
 
-  const hiddenBuiltinIds = dedupeIds(settings.hiddenBuiltinIds, new Set(BUILTIN_ENGINE_IDS));
+  const hiddenBuiltinIds = dedupeIds(remapLegacyBuiltinIds(settings.hiddenBuiltinIds), new Set(BUILTIN_ENGINE_IDS));
   const visibleBuiltinIds = BUILTIN_ENGINE_IDS.filter((id) => !hiddenBuiltinIds.includes(id));
   const customEngineIds = customEngines.map((engine) => engine.id);
   const allowedEngineIds = [...visibleBuiltinIds, ...customEngineIds];

@@ -3,88 +3,125 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Booster Pro Menu</title>
+  <title>Booster Pro</title>
   <link rel="stylesheet" href="./command-center.css">
 </head>
 <body>
-  <main class="wrap" aria-label="Booster Pro Menu">
+  <main class="wrap" aria-label="Booster Pro">
     <header class="topbar">
-      <div class="brand">
+      <button id="go-home-title" class="brand brand-home" type="button" aria-label="Go to home menu">
         <img src="../images/16.png" alt="" class="brand-icon">
-        <h1>Booster Pro Menu</h1>
-      </div>
+        <h1>Booster Pro</h1>
+      </button>
       <div class="top-actions">
-        <button id="open-shortcuts" class="ghost" type="button">Shortcuts</button>
-        <button id="reset-defaults" class="ghost" type="button">Reset Default</button>
+        <button id="go-home" class="ghost icon-btn" type="button" aria-label="Go to home menu" title="Home">&#8962;</button>
+        <button id="open-settings" class="ghost icon-btn" type="button" aria-label="Open settings" title="Settings">&#9881;</button>
       </div>
     </header>
 
-    <section class="query-row">
-      <input id="query-input" type="text" placeholder="Type your search query">
+    <section id="menu-view" class="page-view">
+      <section class="query-row">
+        <div class="query-input-wrap">
+          <input id="query-input" type="text" placeholder="Type your search query">
+          <button id="clear-query" class="query-clear" type="button" aria-label="Clear search query" hidden>x</button>
+        </div>
+      </section>
+
+      <section class="engine-panel">
+        <div class="engine-columns">
+          <div class="engine-col">
+            <h3>AI</h3>
+            <div id="ai-engines" class="engine-list"></div>
+          </div>
+
+          <div class="engine-col">
+            <h3>Web</h3>
+            <div id="web-engines" class="engine-list"></div>
+          </div>
+
+          <div class="engine-col">
+            <h3>Tech</h3>
+            <div id="tech-engines" class="engine-list"></div>
+          </div>
+
+          <div class="engine-col">
+            <h3>Shopping</h3>
+            <div id="shopping-engines" class="engine-list"></div>
+          </div>
+
+          <div class="engine-col">
+            <h3>News</h3>
+            <div id="news-engines" class="engine-list"></div>
+          </div>
+
+          <div class="engine-col">
+            <h3>Research</h3>
+            <div id="research-engines" class="engine-list"></div>
+          </div>
+
+          <div class="engine-col">
+            <h3>Social Media</h3>
+            <div id="social-engines" class="engine-list"></div>
+          </div>
+
+          <div class="engine-col">
+            <h3>Productivity</h3>
+            <div id="productivity-engines" class="engine-list"></div>
+          </div>
+
+          <div class="engine-col">
+            <h3>Utilities</h3>
+            <div id="utilities-engines" class="engine-list"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="custom-row">
+        <input id="custom-name" type="text" placeholder="Engine name">
+        <input id="custom-url" type="text" placeholder="Search URL with %s">
+        <select id="custom-category">
+          <option value="AI">AI</option>
+          <option value="Web">Web</option>
+          <option value="Tech">Tech</option>
+          <option value="Shopping">Shopping</option>
+          <option value="News">News</option>
+          <option value="Research">Research</option>
+          <option value="Social">Social</option>
+          <option value="Productivity">Productivity</option>
+          <option value="Utilities">Utilities</option>
+        </select>
+        <button id="add-custom" class="primary" type="button">Add</button>
+      </section>
     </section>
 
-    <section class="engine-panel">
-      <div class="engine-columns">
-        <div class="engine-col">
-          <h3>AI</h3>
-          <div id="ai-engines" class="engine-list"></div>
+    <section id="settings-view" class="page-view" hidden>
+      <section class="engine-panel settings-panel">
+        <h2>Settings</h2>
+        <div class="settings-grid">
+          <label class="setting-row" for="setting-open-background">
+            <span class="setting-inline">
+              <span>Open searches in background</span>
+              <span class="engine-switch setting-switch">
+                <input id="setting-open-background" class="engine-toggle-input" type="checkbox">
+                <span class="engine-toggle"></span>
+              </span>
+            </span>
+          </label>
+          <label class="setting-row" for="setting-open-next">
+            <span class="setting-inline">
+              <span>Open next to current tab</span>
+              <span class="engine-switch setting-switch">
+                <input id="setting-open-next" class="engine-toggle-input" type="checkbox">
+                <span class="engine-toggle"></span>
+              </span>
+            </span>
+          </label>
         </div>
-
-        <div class="engine-col">
-          <h3>Web</h3>
-          <div id="web-engines" class="engine-list"></div>
+        <div class="settings-actions">
+          <button id="open-shortcuts" class="ghost" type="button">Shortcuts</button>
+          <button id="reset-defaults-settings" class="ghost" type="button">Reset To Default</button>
         </div>
-
-        <div class="engine-col">
-          <h3>Tech</h3>
-          <div id="tech-engines" class="engine-list"></div>
-        </div>
-
-        <div class="engine-col">
-          <h3>Shopping</h3>
-          <div id="shopping-engines" class="engine-list"></div>
-        </div>
-
-        <div class="engine-col">
-          <h3>News</h3>
-          <div id="news-engines" class="engine-list"></div>
-        </div>
-
-        <div class="engine-col">
-          <h3>Research</h3>
-          <div id="research-engines" class="engine-list"></div>
-        </div>
-
-        <div class="engine-col">
-          <h3>Social Media</h3>
-          <div id="social-engines" class="engine-list"></div>
-        </div>
-
-        <div class="engine-col engine-col-placeholder">
-          <h3>Productivity</h3>
-          <p class="placeholder-copy">Coming soon</p>
-        </div>
-
-        <div class="engine-col engine-col-placeholder">
-          <h3>Utilities</h3>
-          <p class="placeholder-copy">Coming soon</p>
-        </div>
-      </div>
-    </section>
-
-    <section class="custom-row">
-      <input id="custom-name" type="text" placeholder="Engine name">
-      <input id="custom-url" type="text" placeholder="Search URL with %s">
-      <select id="custom-category">
-        <option value="AI">AI</option>
-        <option value="Web">Web</option>
-        <option value="Tech">Tech</option>
-        <option value="Shopping">Shopping</option>
-        <option value="News">News</option>
-        <option value="Research">Research</option>
-        <option value="Social">Social</option>
-      </select>
-      <button id="add-custom" class="primary" type="button">Add</button>
+      </section>
     </section>
   </main>
 
