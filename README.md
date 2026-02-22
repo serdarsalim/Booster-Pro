@@ -1,34 +1,42 @@
-# Booster PRO (Modern Context Search Extension)
+# Booster PRO
 
-Booster PRO is a Manifest V3 Chrome extension that provides:
-- smart right-click context search
-- left-click quick search on selected text
-- AI + classic engine routing (including Perplexity)
-- a unified Command Center modal for settings, profiles, and shortcut visibility
+Booster PRO is a Chrome Manifest V3 extension for fast search from selected text and quick engine launching from a unified popup UI.
 
-## Highlights
-- Dynamic context menus with favorites and profile engines
-- Smart Search Stack that routes by query intent
-- Profile-based search presets (`Research`, `Developer`, `Shopping`, `Academic`)
-- Left-click quick menu with configurable modifier key
-- Keyboard shortcut visibility inside Command Center (with direct system shortcut link)
+## Core Features
+- Right-click context search across enabled engines
+- Popup command center for:
+  - query input and one-click engine search
+  - per-engine enable/disable
+  - edit mode (rename/delete engines and rename section headers)
+  - settings and shortcut access
+- Left-click quick search support for selected content
+- Built-in AI, web, research, social, productivity, and utilities engine groups
 
-## Architecture
-- `shared/`: engine registry, default settings, intent detection
-- `background/`: MV3 service worker orchestration, menu build, routing, commands
-- `content/`: left-click quick-action UI on web pages
-- `ui/`: Command Center modal page and styling
+## Default Enabled Engines
+On fresh install/reset, these are enabled by default:
+- Perplexity
+- Google
+- YouTube
+- Reddit
 
-## Load in Chrome
+## Project Structure
+- `background/` service worker, routing, context menus, commands, storage
+- `content/` in-page quick action menu
+- `ui/` command center HTML/CSS/JS
+- `shared/` engine registry and settings sanitization
+
+## Local Development
 1. Open `chrome://extensions`
 2. Enable **Developer mode**
 3. Click **Load unpacked**
-4. Select this folder: `/Users/slm/my-portfolio/booster pro`
-
-## Command Center
-- Open extension popup from toolbar to access the modal settings UI.
-- You can also open Command Center from the context menu.
+4. Select this folder:
+   - `/Users/slm/my-portfolio/booster pro`
+5. Reload the extension after source changes
 
 ## Notes
-- Chrome requires final keyboard shortcut assignment in `chrome://extensions/shortcuts`.
-- Legacy files from the original version are still present, but runtime now uses the modular MV3 architecture above.
+- Chrome shortcut bindings are managed by Chrome itself at `chrome://extensions/shortcuts`.
+- Context menu labels follow current saved engine names.
+
+## License
+GNU Affero General Public License v3.0 or later (`AGPL-3.0-or-later`).
+See `LICENSE` for details.
