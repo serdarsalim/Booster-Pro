@@ -14,8 +14,11 @@
         <h1>Booster Pro</h1>
       </button>
       <div class="top-actions">
+        <button id="start-edit" class="ghost icon-btn" type="button" aria-label="Edit engines and headers" title="Edit">&#9998;</button>
         <button id="go-home" class="ghost icon-btn" type="button" aria-label="Go to home menu" title="Home">&#8962;</button>
         <button id="open-settings" class="ghost icon-btn" type="button" aria-label="Open settings" title="Settings">&#9881;</button>
+        <button id="cancel-edit" class="ghost" type="button" hidden>Cancel</button>
+        <button id="done-edit" class="primary" type="button" hidden>Done</button>
       </div>
     </header>
 
@@ -30,48 +33,48 @@
       <section class="engine-panel">
         <div class="engine-columns">
           <div class="engine-col">
-            <h3>AI</h3>
+            <h3 id="header-ai">AI</h3>
             <div id="ai-engines" class="engine-list"></div>
           </div>
 
           <div class="engine-col">
-            <h3>Web</h3>
+            <h3 id="header-web">Web</h3>
             <div id="web-engines" class="engine-list"></div>
           </div>
 
           <div class="engine-col">
-            <h3>Tech</h3>
-            <div id="tech-engines" class="engine-list"></div>
+            <h3 id="header-utilities">Utilities</h3>
+            <div id="utilities-engines" class="engine-list"></div>
           </div>
 
           <div class="engine-col">
-            <h3>Shopping</h3>
+            <h3 id="header-shopping">Shopping</h3>
             <div id="shopping-engines" class="engine-list"></div>
           </div>
 
           <div class="engine-col">
-            <h3>News</h3>
+            <h3 id="header-news">News</h3>
             <div id="news-engines" class="engine-list"></div>
           </div>
 
           <div class="engine-col">
-            <h3>Research</h3>
-            <div id="research-engines" class="engine-list"></div>
+            <h3 id="header-tech">Tech</h3>
+            <div id="tech-engines" class="engine-list"></div>
           </div>
 
           <div class="engine-col">
-            <h3>Social Media</h3>
+            <h3 id="header-social">Social Media</h3>
             <div id="social-engines" class="engine-list"></div>
           </div>
 
           <div class="engine-col">
-            <h3>Productivity</h3>
+            <h3 id="header-productivity">Productivity</h3>
             <div id="productivity-engines" class="engine-list"></div>
           </div>
 
           <div class="engine-col">
-            <h3>Utilities</h3>
-            <div id="utilities-engines" class="engine-list"></div>
+            <h3 id="header-research">Research</h3>
+            <div id="research-engines" class="engine-list"></div>
           </div>
         </div>
       </section>
@@ -118,8 +121,8 @@
           </label>
         </div>
         <div class="settings-actions">
-          <button id="open-shortcuts" class="ghost" type="button">Shortcuts</button>
-          <button id="reset-defaults-settings" class="ghost" type="button">Reset To Default</button>
+          <button id="open-shortcuts" class="ghost" type="button">Keyboard Shortcuts for Chrome Tabs</button>
+          <button id="reset-defaults-settings" class="ghost" type="button">Reset Search Engines to Default</button>
         </div>
       </section>
     </section>

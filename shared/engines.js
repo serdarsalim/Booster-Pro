@@ -76,7 +76,21 @@ export function getAvailableEngines(settings) {
   const custom = (settings && Array.isArray(settings.customEngines) ? settings.customEngines : [])
     .map((engine) => sanitizeCustomEngine(engine))
     .filter((engine) => Boolean(engine));
-  return [...builtin, ...custom];
+  const engineLabelOverrides = settings && settings.engineLabelOverrides && typeof settings.engineLabelOverrides === "object"
+    ? settings.engineLabelOverrides
+    : {};
+
+  return [...builtin, ...custom].map((engine) => {
+    const override = engineLabelOverrides[engine.id];
+    if (typeof override !== "string") {
+      return engine;
+    }
+    const trimmed = override.trim();
+    if (!trimmed) {
+      return engine;
+    }
+    return { ...engine, name: trimmed };
+  });
 }
 
 export function getEngineMap(settings) {

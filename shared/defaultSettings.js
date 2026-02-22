@@ -1,4 +1,4 @@
-import { BUILTIN_ENGINE_IDS, sanitizeCustomEngine } from "./engines.js";
+import { BUILTIN_ENGINE_IDS, CATEGORY_ORDER, sanitizeCustomEngine } from "./engines.js";
 
 const LEGACY_BUILTIN_ID_MAP = Object.freeze({
   gemini: "youcom"
@@ -11,6 +11,8 @@ export const DEFAULT_SETTINGS = {
   enabledEngineIds: DEFAULT_ENABLED_BUILTIN_IDS.filter((id) => BUILTIN_ENGINE_IDS.includes(id)),
   hiddenBuiltinIds: [],
   customEngines: [],
+  engineLabelOverrides: {},
+  headerLabels: {},
   behavior: {
     openInBackground: false,
     openNextToCurrent: true
@@ -76,6 +78,56 @@ function remapLegacyBuiltinIds(values) {
   });
 }
 
+function remapLegacyBuiltinMapKeys(rawMap) {
+  if (!rawMap || typeof rawMap !== "object" || Array.isArray(rawMap)) {
+    return {};
+  }
+  const out = {};
+  Object.entries(rawMap).forEach(([key, value]) => {
+    const mappedKey = LEGACY_BUILTIN_ID_MAP[key] || key;
+    out[mappedKey] = value;
+  });
+  return out;
+}
+
+function sanitizeLabelOverrides(rawMap, allowedIds) {
+  if (!rawMap || typeof rawMap !== "object" || Array.isArray(rawMap)) {
+    return {};
+  }
+  const allowed = new Set(allowedIds);
+  const out = {};
+  Object.entries(rawMap).forEach(([id, value]) => {
+    if (!allowed.has(id) || typeof value !== "string") {
+      return;
+    }
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return;
+    }
+    out[id] = trimmed;
+  });
+  return out;
+}
+
+function sanitizeHeaderLabels(rawMap) {
+  if (!rawMap || typeof rawMap !== "object" || Array.isArray(rawMap)) {
+    return {};
+  }
+  const out = {};
+  CATEGORY_ORDER.forEach((category) => {
+    const value = rawMap[category];
+    if (typeof value !== "string") {
+      return;
+    }
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return;
+    }
+    out[category] = trimmed;
+  });
+  return out;
+}
+
 function migrateEnabledIds(settings, allowedIds) {
   const direct = dedupeEngineIds(remapLegacyBuiltinIds(settings.enabledEngineIds), allowedIds);
   if (direct.length) {
@@ -103,6 +155,11 @@ export function sanitizeSettings(rawSettings) {
   const allowedEngineIds = [...visibleBuiltinIds, ...customEngineIds];
 
   const enabledEngineIds = migrateEnabledIds(settings, allowedEngineIds);
+  const engineLabelOverrides = sanitizeLabelOverrides(
+    remapLegacyBuiltinMapKeys(settings.engineLabelOverrides),
+    allowedEngineIds
+  );
+  const headerLabels = sanitizeHeaderLabels(settings.headerLabels);
 
   const behavior = {
     openInBackground: Boolean(settings.behavior && settings.behavior.openInBackground),
@@ -117,6 +174,8 @@ export function sanitizeSettings(rawSettings) {
     enabledEngineIds,
     hiddenBuiltinIds,
     customEngines,
+    engineLabelOverrides,
+    headerLabels,
     behavior
   };
 }
