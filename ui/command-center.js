@@ -477,13 +477,13 @@ function exportEngineList() {
   }
   ensureSettingsShape(source);
   const payload = {
-    format: "booster-pro-engine-list",
+    format: "searcher-x-engine-list",
     version: 1,
     exportedAt: new Date().toISOString(),
     settings: source
   };
   const fileDate = formatDateForFileName(new Date());
-  downloadTextFile(`booster-pro-engine-list-${fileDate}.json`, JSON.stringify(payload, null, 2));
+  downloadTextFile(`searcher-x-engine-list-${fileDate}.json`, JSON.stringify(payload, null, 2));
   showToast("Engine list exported.");
 }
 
@@ -1471,7 +1471,7 @@ function bindEvents() {
     }
 
     if (button.id === "open-website") {
-      chrome.tabs.create({ url: "http://serdarsalim.com/booster-pro" });
+      chrome.tabs.create({ url: "https://serdarsalim.com/searcher-x" });
       return;
     }
 
