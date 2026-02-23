@@ -93,10 +93,6 @@
         "url": "https://pixabay.com/images/search/%s/"
       },
       {
-        "name": "Pixiv",
-        "url": "http://www.pixiv.net/search.php?word=%s"
-      },
-      {
         "name": "Unsplash",
         "url": "https://unsplash.com/s/photos/%s"
       },
@@ -110,10 +106,6 @@
   {
     "icon": "video",
     "sites": [
-      {
-        "name": "Niconico",
-        "url": "http://www.nicovideo.jp/search/%s"
-      },
       {
         "name": "Youtube",
         "url": "https://www.youtube.com/results?search_query=%s"
@@ -332,10 +324,6 @@
     "icon": "download",
     "sites": [
       {
-        "name": "Cdsoso",
-        "url": "https://www.cdsoso.cc/searches-%s-hot-1-null.html"
-      },
-      {
         "icon": "https://www.google.com/favicon.ico",
         "name": "Google cse",
         "url": "https://cse.google.com/?q=%s&newwindow=1&cx=006100883259189159113%3Atwgohm0sz8q"
@@ -476,24 +464,8 @@
         "url": "http://www.miobt.com/search.php?keyword=%s"
       },
       {
-        "name": "ACG.RIP",
-        "url": "https://acg.rip/?term=%s"
-      },
-      {
-        "name": "KOTOMI RSS",
-        "url": "https://moe4sale.in/?kw=%s"
-      },
-      {
-        "name": "Mikan",
-        "url": "http://mikanani.me/Home/Search?searchstr=%s"
-      },
-      {
         "name": "shana project",
         "url": "https://www.shanaproject.com/search/?title=%s"
-      },
-      {
-        "name": "Tokyotosho",
-        "url": "https://www.tokyotosho.info/search.php?terms=%s"
       }
     ],
     "type": "ACG"

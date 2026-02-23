@@ -156,6 +156,29 @@ button {
   min-height: 0;
   overflow-x: hidden;
   overflow-y: auto;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: #bcc8dd transparent;
+}
+
+.engine-panel::-webkit-scrollbar {
+  width: 8px;
+}
+
+.engine-panel::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.engine-panel::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #c8d4e8 0%, #b4c2da 100%);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+.engine-panel::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #b9c7de 0%, #a6b7d2 100%);
+  background-clip: content-box;
 }
 
 .page-view {
@@ -684,7 +707,7 @@ button {
   display: none !important;
 }
 
-@media (max-width: 760px) {
+@media (max-width: 700px) {
   .engine-columns {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
