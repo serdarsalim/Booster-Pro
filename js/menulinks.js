@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('about').addEventListener('click', function () {
-        chrome.tabs.create({url: 'https://chrome.google.com/webstore/detail/booster-pro/cchabfoffpiiknnogkloipdphddajgdf?hl=en'});
+        chrome.tabs.create({url: 'https://serdarsalim.com/searcher-x'});
     });
 });
 
