@@ -21,13 +21,24 @@ const STARTER_VISIBLE_BUILTIN_IDS = Object.freeze([
   "wikipedia",
   "google-maps",
   "grokopedia",
-  "google-news",
-  "reuters",
-  "bbc"
+  "github",
+  "stackoverflow"
 ]);
 
+const DEFAULT_CUSTOM_ENGINES = Object.freeze([
+  {
+    id: "custom-codepen",
+    name: "CodePen",
+    category: "Tech",
+    urlTemplate: "https://codepen.io/search?q=%s"
+  }
+]);
+
+const DEFAULT_CUSTOM_ENGINE_IDS = DEFAULT_CUSTOM_ENGINES.map((engine) => engine.id);
 const DEFAULT_ENABLED_BUILTIN_IDS = STARTER_VISIBLE_BUILTIN_IDS;
+const DEFAULT_ENABLED_ENGINE_IDS = [...DEFAULT_ENABLED_BUILTIN_IDS, ...DEFAULT_CUSTOM_ENGINE_IDS];
 const DEFAULT_HIDDEN_BUILTIN_IDS = BUILTIN_ENGINE_IDS.filter((id) => !STARTER_VISIBLE_BUILTIN_IDS.includes(id));
+const DEFAULT_ENGINE_ID_SET = new Set([...BUILTIN_ENGINE_IDS, ...DEFAULT_CUSTOM_ENGINE_IDS]);
 const DEFAULT_LAYOUT_COLUMNS = Object.freeze([
   [
     { id: "ai", name: "AI", engineIds: ["chatgpt", "perplexity", "youcom"] },
@@ -39,7 +50,7 @@ const DEFAULT_LAYOUT_COLUMNS = Object.freeze([
   ],
   [
     { id: "utilities", name: "Utilities", engineIds: ["wikipedia", "google-maps", "grokopedia"] },
-    { id: "news", name: "News", engineIds: ["google-news", "reuters", "bbc"] }
+    { id: "tech", name: "Tech", engineIds: ["github", "stackoverflow", "custom-codepen"] }
   ]
 ]);
 
@@ -69,17 +80,17 @@ const CATEGORY_COLUMN_INDEX = Object.freeze({
 
 export const DEFAULT_SETTINGS = {
   schemaVersion: 4,
-  enabledEngineIds: DEFAULT_ENABLED_BUILTIN_IDS.filter((id) => BUILTIN_ENGINE_IDS.includes(id)),
+  enabledEngineIds: DEFAULT_ENABLED_ENGINE_IDS.filter((id) => DEFAULT_ENGINE_ID_SET.has(id)),
   hiddenBuiltinIds: DEFAULT_HIDDEN_BUILTIN_IDS,
-  customEngines: [],
+  customEngines: DEFAULT_CUSTOM_ENGINES.map((engine) => ({ ...engine })),
   engineLabelOverrides: {},
   headerLabels: {},
   layoutColumns: DEFAULT_LAYOUT_COLUMNS.map((column) => column.map((section) => ({
     ...section,
-    engineIds: section.engineIds.filter((id) => BUILTIN_ENGINE_IDS.includes(id))
+    engineIds: section.engineIds.filter((id) => DEFAULT_ENGINE_ID_SET.has(id))
   }))),
   behavior: {
-    openInBackground: false,
+    openInBackground: true,
     openNextToCurrent: true
   }
 };

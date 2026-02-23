@@ -374,33 +374,17 @@ function getEngineMap(targetSettings) {
 
 function updateTopActionButtons() {
   const startEditButton = document.getElementById("start-edit");
-  const homeButton = document.getElementById("go-home");
   const settingsButton = document.getElementById("open-settings");
-  const doneButton = document.getElementById("done-edit");
-  const cancelButton = document.getElementById("cancel-edit");
 
   if (!(startEditButton instanceof HTMLButtonElement)
-    || !(homeButton instanceof HTMLButtonElement)
-    || !(settingsButton instanceof HTMLButtonElement)
-    || !(doneButton instanceof HTMLButtonElement)
-    || !(cancelButton instanceof HTMLButtonElement)) {
+    || !(settingsButton instanceof HTMLButtonElement)) {
     return;
   }
 
-  if (editMode) {
-    startEditButton.hidden = true;
-    homeButton.hidden = true;
-    settingsButton.hidden = true;
-    doneButton.hidden = false;
-    cancelButton.hidden = false;
-    return;
-  }
-
-  startEditButton.hidden = activeView !== "menu";
-  homeButton.hidden = false;
+  startEditButton.hidden = false;
   settingsButton.hidden = false;
-  doneButton.hidden = true;
-  cancelButton.hidden = true;
+  startEditButton.setAttribute("aria-pressed", editMode ? "true" : "false");
+  startEditButton.title = editMode ? "Editing (click to exit)" : "Edit";
 }
 
 function setActiveView(viewId) {
@@ -444,20 +428,26 @@ function queueAutosave() {
     clearTimeout(autosaveTimer);
   }
   autosaveTimer = setTimeout(() => {
-    sendMessage("SAVE_SETTINGS", { settings }).catch(() => undefined);
+    const source = editMode && editDraft ? editDraft : settings;
+    if (!source) {
+      autosaveTimer = null;
+      return;
+    }
+    sendMessage("SAVE_SETTINGS", { settings: source }).catch(() => undefined);
     autosaveTimer = null;
   }, 180);
 }
 
 async function flushAutosave() {
-  if (!settings) {
+  const source = editMode && editDraft ? editDraft : settings;
+  if (!source) {
     return;
   }
   if (autosaveTimer) {
     clearTimeout(autosaveTimer);
     autosaveTimer = null;
   }
-  await sendMessage("SAVE_SETTINGS", { settings });
+  await sendMessage("SAVE_SETTINGS", { settings: source });
 }
 
 function runEngineSearch(engineId) {
@@ -774,34 +764,19 @@ function enterEditMode() {
   render();
 }
 
-function cancelEditMode() {
+function exitEditMode() {
   if (!editMode) {
     return;
   }
   closeAddMoreModal();
-  editMode = false;
-  editDraft = null;
-  render();
-}
-
-async function doneEditMode() {
-  if (!editMode || !editDraft) {
-    return;
-  }
-
-  closeAddMoreModal();
-
-  try {
-    const response = await sendMessage("SAVE_SETTINGS", { settings: editDraft });
-    settings = response.settings;
-  } catch (_error) {
+  if (editDraft) {
     settings = deepClone(editDraft);
   }
-
   editMode = false;
   editDraft = null;
   render();
   renderSettingsForm();
+  queueAutosave();
 }
 
 function mapSharedTypeToStorageCategory(type) {
@@ -1103,6 +1078,7 @@ function addManualEngineToActiveSection() {
   }
   assignEngineToSection(editDraft, activeAddSectionId, engineId);
   render();
+  queueAutosave();
   closeAddMoreModal();
   showToast(`Added ${name}.`);
 }
@@ -1136,6 +1112,7 @@ function addSharedEngineToActiveSection(sharedKey) {
   const sectionName = getSectionName(editDraft, activeAddSectionId);
   assignEngineToSection(editDraft, activeAddSectionId, engineId);
   render();
+  queueAutosave();
   showToast(`Added ${entry.name} to ${sectionName}.`);
 }
 
@@ -1227,6 +1204,7 @@ function bindEvents() {
         } else {
           delete editDraft.engineLabelOverrides[editEngineId];
         }
+        queueAutosave();
         return;
       }
 
@@ -1237,6 +1215,7 @@ function bindEvents() {
           return;
         }
         ref.section.name = target.value.trim() || "Category";
+        queueAutosave();
       }
     }
   });
@@ -1292,6 +1271,7 @@ function bindEvents() {
       }
       removeEngine(removeId, editDraft);
       render();
+      queueAutosave();
       return;
     }
 
@@ -1311,17 +1291,14 @@ function bindEvents() {
     }
 
     if (button.id === "start-edit") {
+      if (editMode) {
+        exitEditMode();
+        return;
+      }
+      if (activeView !== "menu") {
+        setActiveView("menu");
+      }
       enterEditMode();
-      return;
-    }
-
-    if (button.id === "cancel-edit") {
-      cancelEditMode();
-      return;
-    }
-
-    if (button.id === "done-edit") {
-      doneEditMode().catch(() => undefined);
       return;
     }
 
@@ -1336,6 +1313,10 @@ function bindEvents() {
 
     if (button.id === "open-settings") {
       if (editMode) {
+        exitEditMode();
+      }
+      if (activeView === "settings") {
+        setActiveView("menu");
         return;
       }
       renderSettingsForm();
@@ -1343,7 +1324,7 @@ function bindEvents() {
       return;
     }
 
-    if (button.id === "go-home" || button.id === "go-home-title") {
+    if (button.id === "go-home-title") {
       setActiveView("menu");
       return;
     }
@@ -1374,6 +1355,7 @@ function bindEvents() {
       }
       addCategory(Number(addCategoryColumn), editDraft);
       render();
+      queueAutosave();
       return;
     }
 
@@ -1384,6 +1366,7 @@ function bindEvents() {
       }
       removeCategory(removeSectionId, editDraft);
       render();
+      queueAutosave();
       return;
     }
 
@@ -1499,6 +1482,7 @@ function bindEvents() {
     assignEngineToSection(editDraft, targetSectionId, dragState.engineId, beforeEngineId);
     clearDropTargets();
     render();
+    queueAutosave();
   });
 }
 

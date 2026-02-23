@@ -117,6 +117,10 @@
     "icon": "newspaper",
     "sites": [
       {
+        "name": "Al-Monitor",
+        "url": "https://www.al-monitor.com/search?text=%s"
+      },
+      {
         "name": "BBC",
         "url": "https://www.bbc.co.uk/search?q=%s"
       },
@@ -132,6 +136,10 @@
       {
         "name": "Reuters",
         "url": "https://www.reuters.com/site-search/?query=%s"
+      },
+      {
+        "name": "The Guardian",
+        "url": "https://www.theguardian.com/search?q=%s"
       }
     ],
     "type": "News"

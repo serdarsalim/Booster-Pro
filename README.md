@@ -16,7 +16,7 @@ Booster PRO is a Chrome Manifest V3 extension for fast search from selected text
 On fresh install/reset, the popup starts with 6 categories (3 engines each):
 - Column 1: `AI` (ChatGPT, Perplexity, You.com), `Social Media` (YouTube, Reddit, Twitter/X)
 - Column 2: `Web` (Google, Bing, DuckDuckGo), `Productivity` (Gmail, Google Drive, Notion)
-- Column 3: `Utilities` (Wikipedia, Google Maps, Grokopedia), `News` (Google News, Reuters, BBC)
+- Column 3: `Utilities` (Wikipedia, Google Maps, Grokopedia), `Tech` (GitHub, Stack Overflow, CodePen)
 
 ## Project Structure
 - `background/` service worker, routing, context menus, commands, storage
