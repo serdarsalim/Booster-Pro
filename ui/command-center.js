@@ -1431,6 +1431,11 @@ function bindEvents() {
       return;
     }
 
+    if (button.id === "open-website") {
+      chrome.tabs.create({ url: "http://serdarsalim.com/booster-pro" });
+      return;
+    }
+
     if (button.id === "export-engine-list") {
       exportEngineList();
       return;
