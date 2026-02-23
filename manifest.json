@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Searcher X",
-  "description": "Modern right-click and left-click context search with AI-first routing and smart search stacks.",
+  "description": "Chrome extension to search text in multiple search engines instantly.",
   "version": "2026.2.23",
   "permissions": [
     "contextMenus",
