@@ -1,6 +1,6 @@
-# Booster PRO
+# Searcher X
 
-Booster PRO is a Chrome Manifest V3 extension for fast search from selected text and quick engine launching from a unified popup UI.
+Searcher X is a Chrome Manifest V3 extension for fast search from selected text and quick engine launching from a unified popup UI.
 
 ## Core Features
 - Right-click context search across enabled engines
