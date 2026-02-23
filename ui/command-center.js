@@ -496,6 +496,21 @@ function readFileText(file) {
   });
 }
 
+function updateManualAddButtonVisibility() {
+  const nameInput = document.getElementById("manual-engine-name");
+  const urlInput = document.getElementById("manual-engine-url");
+  const addButton = document.getElementById("add-manual-engine");
+  if (!(nameInput instanceof HTMLInputElement)
+    || !(urlInput instanceof HTMLInputElement)
+    || !(addButton instanceof HTMLButtonElement)) {
+    return;
+  }
+
+  const hasName = nameInput.value.trim().length > 0;
+  const hasUrl = urlInput.value.trim().length > 0;
+  addButton.hidden = !(hasName && hasUrl);
+}
+
 async function importEngineListFromFile(file) {
   if (!file) {
     return;
@@ -1028,16 +1043,16 @@ async function openAddMoreModal(sectionId) {
 
   activeAddSectionId = sectionId;
   const modal = document.getElementById("add-more-modal");
-  const subtitle = document.getElementById("add-more-subtitle");
+  const title = document.getElementById("add-more-title");
   const manualName = document.getElementById("manual-engine-name");
   const manualUrl = document.getElementById("manual-engine-url");
   const searchInput = document.getElementById("shared-search-input");
 
-  if (!(modal instanceof HTMLElement) || !(subtitle instanceof HTMLElement)) {
+  if (!(modal instanceof HTMLElement) || !(title instanceof HTMLElement)) {
     return;
   }
 
-  subtitle.textContent = `Adding to ${getSectionName(editDraft, sectionId)}`;
+  title.textContent = `Adding engine to ${getSectionName(editDraft, sectionId)}`;
 
   if (manualName instanceof HTMLInputElement) {
     manualName.value = "";
@@ -1045,6 +1060,7 @@ async function openAddMoreModal(sectionId) {
   if (manualUrl instanceof HTMLInputElement) {
     manualUrl.value = "";
   }
+  updateManualAddButtonVisibility();
   if (searchInput instanceof HTMLInputElement) {
     searchInput.value = "";
   }
@@ -1258,6 +1274,11 @@ function bindEvents() {
 
     if (target.id === "shared-search-input") {
       refreshSharedSelect();
+      return;
+    }
+
+    if (target.id === "manual-engine-name" || target.id === "manual-engine-url") {
+      updateManualAddButtonVisibility();
       return;
     }
 

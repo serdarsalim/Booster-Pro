@@ -75,19 +75,9 @@
   <div id="add-more-modal" class="modal-backdrop" hidden>
     <section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="add-more-title">
       <header class="modal-header">
-        <h2 id="add-more-title">Add More Engines</h2>
+        <h2 id="add-more-title">Adding engine to</h2>
         <button id="add-more-close" class="icon-ghost" type="button" aria-label="Close add engines dialog">&times;</button>
       </header>
-      <p id="add-more-subtitle" class="modal-subtitle"></p>
-
-      <section class="modal-section">
-        <h3>Manual</h3>
-        <div class="modal-grid manual-grid">
-          <input id="manual-engine-name" type="text" placeholder="Engine name">
-          <input id="manual-engine-url" type="text" placeholder="Search URL with %s">
-          <button id="add-manual-engine" class="primary" type="button">Add</button>
-        </div>
-      </section>
 
       <section class="modal-section">
         <h3>Add from list</h3>
@@ -104,6 +94,15 @@
               <tbody id="shared-engine-table-body"></tbody>
             </table>
           </div>
+        </div>
+      </section>
+
+      <section class="modal-section">
+        <h3>Add Manually</h3>
+        <div class="modal-grid manual-grid">
+          <input id="manual-engine-name" type="text" placeholder="Engine name">
+          <input id="manual-engine-url" type="text" placeholder="Search URL with %s">
+          <button id="add-manual-engine" class="primary" type="button" hidden>Add</button>
         </div>
       </section>
     </section>

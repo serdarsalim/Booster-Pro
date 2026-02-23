@@ -646,7 +646,7 @@ button {
 .modal-card {
   width: min(560px, 100%);
   max-height: min(720px, calc(100vh - 36px));
-  overflow: auto;
+  overflow: hidden;
   border: 1px solid #d6e1f2;
   border-radius: 12px;
   background: #fff;
@@ -667,16 +667,10 @@ button {
   font-size: 17px;
 }
 
-.modal-subtitle {
-  margin: 0;
-  color: #60718d;
-  font-size: 13px;
-}
-
 .modal-section {
-  border: 1px solid #e0e9f8;
-  border-radius: 10px;
-  padding: 10px;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
   display: grid;
   gap: 8px;
 }
