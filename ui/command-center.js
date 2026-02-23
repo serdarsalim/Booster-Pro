@@ -90,7 +90,7 @@ let activeAddSectionId = null;
 let sharedCatalog = [];
 let sharedCatalogLoaded = false;
 let sharedCatalogByKey = new Map();
-let selectedSharedKey = null;
+let toastTimer = null;
 
 const dragState = {
   engineId: null,
@@ -169,6 +169,25 @@ function escapeHtml(value) {
 
 function getWorkingSettings() {
   return editMode && editDraft ? editDraft : settings;
+}
+
+function showToast(message) {
+  const toast = document.getElementById("toast");
+  if (!(toast instanceof HTMLElement)) {
+    return;
+  }
+  toast.textContent = String(message || "").trim();
+  if (!toast.textContent) {
+    return;
+  }
+  toast.hidden = false;
+  if (toastTimer) {
+    clearTimeout(toastTimer);
+  }
+  toastTimer = setTimeout(() => {
+    toast.hidden = true;
+    toastTimer = null;
+  }, 1900);
 }
 
 function slugify(value) {
@@ -901,20 +920,14 @@ function refreshSharedSelect() {
     : sharedCatalog;
 
   if (!filtered.length) {
-    selectedSharedKey = null;
     tableBody.innerHTML = "<tr class=\"shared-empty\"><td colspan=\"2\">No engines found</td></tr>";
     return;
   }
 
-  if (!selectedSharedKey || !filtered.some((entry) => entry.key === selectedSharedKey)) {
-    selectedSharedKey = filtered[0].key;
-  }
-
   tableBody.innerHTML = filtered
     .map((entry) => {
-      const selectedClass = entry.key === selectedSharedKey ? " is-selected" : "";
       return `
-        <tr class="shared-row${selectedClass}" data-shared-key="${escapeHtml(entry.key)}" title="${escapeHtml(entry.urlTemplate)}">
+        <tr class="shared-row" data-shared-key="${escapeHtml(entry.key)}" title="${escapeHtml(entry.urlTemplate)}">
           <td>${escapeHtml(entry.displayCategory)}</td>
           <td>${escapeHtml(entry.name)}</td>
         </tr>
@@ -926,6 +939,41 @@ function refreshSharedSelect() {
 function getSectionName(targetSettings, sectionId) {
   const ref = getSectionRef(targetSettings, sectionId);
   return ref ? ref.section.name : "Category";
+}
+
+function isEngineInSection(targetSettings, sectionId, engineId) {
+  const ref = getSectionRef(targetSettings, sectionId);
+  if (!ref) {
+    return false;
+  }
+  return ref.section.engineIds.includes(engineId);
+}
+
+function inferStorageCategoryForSection(targetSettings, sectionId) {
+  const ref = getSectionRef(targetSettings, sectionId);
+  if (!ref) {
+    return "Web";
+  }
+
+  const engineMap = getEngineMap(targetSettings);
+  for (let index = 0; index < ref.section.engineIds.length; index += 1) {
+    const engineId = ref.section.engineIds[index];
+    const engine = engineMap.get(engineId);
+    if (engine && CATEGORY_ORDER.includes(engine.category)) {
+      return engine.category;
+    }
+  }
+
+  const normalizedName = slugify(ref.section.name);
+  if (normalizedName.includes("ai")) return "AI";
+  if (normalizedName.includes("social")) return "Social";
+  if (normalizedName.includes("news")) return "News";
+  if (normalizedName.includes("product")) return "Productivity";
+  if (normalizedName.includes("shop")) return "Shopping";
+  if (normalizedName.includes("research")) return "Research";
+  if (normalizedName.includes("tech") || normalizedName.includes("develop")) return "Tech";
+  if (normalizedName.includes("util")) return "Utilities";
+  return "Web";
 }
 
 async function openAddMoreModal(sectionId) {
@@ -955,7 +1003,6 @@ async function openAddMoreModal(sectionId) {
   if (searchInput instanceof HTMLInputElement) {
     searchInput.value = "";
   }
-  selectedSharedKey = null;
 
   await loadSharedCatalog();
   refreshSharedSelect();
@@ -969,7 +1016,6 @@ function closeAddMoreModal() {
     modal.hidden = true;
   }
   activeAddSectionId = null;
-  selectedSharedKey = null;
 }
 
 function createUniqueCustomId(name, targetSettings) {
@@ -1035,46 +1081,62 @@ function addManualEngineToActiveSection() {
 
   const nameInput = document.getElementById("manual-engine-name");
   const urlInput = document.getElementById("manual-engine-url");
-  const categorySelect = document.getElementById("manual-engine-category");
 
   if (!(nameInput instanceof HTMLInputElement)
-    || !(urlInput instanceof HTMLInputElement)
-    || !(categorySelect instanceof HTMLSelectElement)) {
+    || !(urlInput instanceof HTMLInputElement)) {
     return;
   }
 
   const name = nameInput.value.trim();
   const urlTemplate = urlInput.value.trim();
-  const category = categorySelect.value;
 
   if (!name || !urlTemplate.includes("%s") || !/^https?:\/\//i.test(urlTemplate)) {
+    showToast("Enter a valid engine name and URL with %s.");
     return;
   }
 
+  const category = inferStorageCategoryForSection(editDraft, activeAddSectionId);
   const engineId = upsertEngine(name, urlTemplate, category, editDraft);
+  if (isEngineInSection(editDraft, activeAddSectionId, engineId)) {
+    showToast("Engine already exists in this category.");
+    return;
+  }
   assignEngineToSection(editDraft, activeAddSectionId, engineId);
   render();
   closeAddMoreModal();
+  showToast(`Added ${name}.`);
 }
 
-function addSharedEngineToActiveSection() {
+function addSharedEngineToActiveSection(sharedKey) {
   if (!editDraft || !activeAddSectionId) {
     return;
   }
 
-  if (!selectedSharedKey) {
+  if (!sharedKey) {
     return;
   }
 
-  const entry = sharedCatalogByKey.get(selectedSharedKey);
+  const entry = sharedCatalogByKey.get(sharedKey);
   if (!entry) {
     return;
   }
 
+  const existingBuiltin = BUILTIN_ENGINES.find((engine) => engine.urlTemplate === entry.urlTemplate);
+  const maybeExistingId = existingBuiltin ? existingBuiltin.id : null;
+  if (maybeExistingId && isEngineInSection(editDraft, activeAddSectionId, maybeExistingId)) {
+    showToast("Engine already exists in this category.");
+    return;
+  }
+
   const engineId = upsertEngine(entry.name, entry.urlTemplate, entry.category, editDraft);
+  if (isEngineInSection(editDraft, activeAddSectionId, engineId)) {
+    showToast("Engine already exists in this category.");
+    return;
+  }
+  const sectionName = getSectionName(editDraft, activeAddSectionId);
   assignEngineToSection(editDraft, activeAddSectionId, engineId);
   render();
-  closeAddMoreModal();
+  showToast(`Added ${entry.name} to ${sectionName}.`);
 }
 
 function clearDropTargets() {
@@ -1217,8 +1279,7 @@ function bindEvents() {
     if (sharedRow instanceof HTMLElement) {
       const key = sharedRow.getAttribute("data-shared-key");
       if (key) {
-        selectedSharedKey = key;
-        refreshSharedSelect();
+        addSharedEngineToActiveSection(key);
       }
       return;
     }
@@ -1303,11 +1364,6 @@ function bindEvents() {
 
     if (button.id === "add-manual-engine") {
       addManualEngineToActiveSection();
-      return;
-    }
-
-    if (button.id === "add-shared-engine") {
-      addSharedEngineToActiveSection();
       return;
     }
 

@@ -79,17 +79,6 @@
         <div class="modal-grid">
           <input id="manual-engine-name" type="text" placeholder="Engine name">
           <input id="manual-engine-url" type="text" placeholder="Search URL with %s">
-          <select id="manual-engine-category">
-            <option value="AI">AI</option>
-            <option value="Web">Web</option>
-            <option value="Tech">Tech</option>
-            <option value="Shopping">Shopping</option>
-            <option value="News">News</option>
-            <option value="Research">Research</option>
-            <option value="Social">Social</option>
-            <option value="Productivity">Productivity</option>
-            <option value="Utilities">Utilities</option>
-          </select>
           <button id="add-manual-engine" class="primary" type="button">Add Manual Engine</button>
         </div>
       </section>
@@ -109,11 +98,12 @@
               <tbody id="shared-engine-table-body"></tbody>
             </table>
           </div>
-          <button id="add-shared-engine" class="primary" type="button">Add Selected Engine</button>
         </div>
       </section>
     </section>
   </div>
+
+  <div id="toast" class="toast" hidden role="status" aria-live="polite"></div>
 
   <script type="module" src="./command-center.js"></script>
 </body>

@@ -650,6 +650,28 @@ button {
   padding: 14px 10px;
 }
 
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 18px;
+  transform: translateX(-50%);
+  min-width: 180px;
+  max-width: min(440px, calc(100vw - 24px));
+  border-radius: 10px;
+  background: #132641;
+  color: #fff;
+  padding: 10px 12px;
+  font-size: 13px;
+  line-height: 1.3;
+  text-align: center;
+  box-shadow: 0 10px 24px rgba(7, 15, 30, 0.35);
+  z-index: 1200;
+}
+
+.toast[hidden] {
+  display: none !important;
+}
+
 @media (max-width: 760px) {
   .engine-columns {
     grid-template-columns: repeat(2, minmax(0, 1fr));

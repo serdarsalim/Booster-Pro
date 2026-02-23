@@ -362,11 +362,11 @@
     "selectTxt": true,
     "sites": [
       {
-        "name": "Bing Search in site",
+        "name": "Bing",
         "url": "https://www.bing.com/search?q=%s%20site%3A%h"
       },
       {
-        "name": "Duckduckgo Search in site",
+        "name": "DuckDuckGo",
         "url": "https://duckduckgo.com/?q=%s%20site%3A%h"
       },
       {
@@ -374,7 +374,7 @@
         "url": "https://www.google.com/maps/search/%s"
       },
       {
-        "name": "Google Search in site",
+        "name": "Google",
         "url": "https://www.google.com/search?q=%s%20site%3A%h&ie=utf-8&oe=utf-8"
       },
       {
@@ -383,7 +383,7 @@
       },
       {
         "icon": "https://www.startpage.com/sp/cdn/favicons/favicon-16x16--default.png",
-        "name": "Startpage Search in site",
+        "name": "Startpage",
         "url": "https://www.startpage.com/sp/search?query=%s%20site%3A%h"
       },
       {
@@ -392,11 +392,11 @@
         "url": "https://hoothin.com/qrcode#%s"
       },
       {
-        "name": "Yahoo Search in site",
+        "name": "Yahoo",
         "url": "https://search.yahoo.com/search;?p=%s%20site%3A%h"
       },
       {
-        "name": "Yandex Search in site",
+        "name": "Yandex",
         "url": "https://yandex.com/search/?text=%s%20site%3A%h"
       }
     ],
@@ -508,7 +508,7 @@
         "url": "https://chatgpt.com/?q=%s"
       },
       {
-        "name": "Futurepedia - Find The Best AI Tools & Software",
+        "name": "Futurepedia",
         "url": "https://www.futurepedia.io/search?search=%s"
       },
       {
