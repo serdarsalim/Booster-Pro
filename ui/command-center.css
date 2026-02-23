@@ -383,6 +383,20 @@ button {
   min-height: 12px;
 }
 
+.category-inline-item {
+  padding-top: 0;
+}
+
+.category-inline-title {
+  grid-column: 2;
+  display: block;
+  font-size: 13px;
+  line-height: 1.2;
+  font-weight: 700;
+  color: #445676;
+  letter-spacing: 0.01em;
+}
+
 .engine-list.is-drop-target {
   outline: 1px dashed #9eb6dd;
   outline-offset: 2px;

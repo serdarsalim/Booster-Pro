@@ -758,7 +758,7 @@ function renderSection(section, engineMap, enabledSet) {
         aria-label="Rename ${escapeHtml(section.name)} category"
       >
     `
-    : `<h3 class="category-title">${escapeHtml(section.name)}</h3>`;
+    : "";
 
   const headerDelete = editMode
     ? `<button type="button" class="remove-category-btn" data-remove-section="${escapeHtml(section.id)}" aria-label="Remove category">&times;</button>`
@@ -772,8 +772,20 @@ function renderSection(section, engineMap, enabledSet) {
     `
     : "";
 
+  const inlineTitle = editMode
+    ? ""
+    : `
+      <div class="engine-item category-inline-item">
+        <span class="engine-main">
+          <span class="category-inline-title">${escapeHtml(section.name)}</span>
+        </span>
+      </div>
+    `;
+
   return `
     <section class="category-card" data-section-id="${escapeHtml(section.id)}">
+      ${editMode
+        ? `
       <header class="category-header">
         <div class="category-header-row">
           ${headerTitle}
@@ -781,7 +793,10 @@ function renderSection(section, engineMap, enabledSet) {
         </div>
         ${controls}
       </header>
+      `
+        : ""}
       <div class="engine-list" data-section-id="${escapeHtml(section.id)}">
+        ${inlineTitle}
         ${engines.map((engine) => renderEngineItem(engine, enabledSet)).join("")}
       </div>
     </section>
