@@ -286,15 +286,7 @@ button {
   display: grid;
   align-content: start;
   gap: 10px;
-  padding: 0 0 0 10px;
-}
-
-.engine-col:first-child {
-  padding-left: 0;
-}
-
-.engine-col:not(:first-child) {
-  border-left: 1px solid var(--line);
+  padding: 0;
 }
 
 .category-card {
@@ -762,14 +754,8 @@ button {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .engine-col:not(:first-child) {
-    border-left: 0;
-    padding-left: 0;
-  }
-
   .engine-col:nth-child(2n) {
-    border-left: 1px solid var(--line);
-    padding-left: 10px;
+    padding-left: 0;
   }
 }
 
@@ -779,7 +765,6 @@ button {
   }
 
   .engine-col:nth-child(2n) {
-    border-left: 0;
     padding-left: 0;
   }
 

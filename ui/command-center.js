@@ -450,6 +450,76 @@ async function flushAutosave() {
   await sendMessage("SAVE_SETTINGS", { settings: source });
 }
 
+function formatDateForFileName(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function downloadTextFile(filename, text) {
+  const blob = new Blob([text], { type: "application/json;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  document.body.append(anchor);
+  anchor.click();
+  anchor.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
+function exportEngineList() {
+  const source = editMode && editDraft ? editDraft : settings;
+  if (!source) {
+    showToast("Nothing to export yet.");
+    return;
+  }
+  ensureSettingsShape(source);
+  const payload = {
+    format: "booster-pro-engine-list",
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    settings: source
+  };
+  const fileDate = formatDateForFileName(new Date());
+  downloadTextFile(`booster-pro-engine-list-${fileDate}.json`, JSON.stringify(payload, null, 2));
+  showToast("Engine list exported.");
+}
+
+function readFileText(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(typeof reader.result === "string" ? reader.result : "");
+    reader.onerror = () => reject(new Error("Could not read file."));
+    reader.readAsText(file);
+  });
+}
+
+async function importEngineListFromFile(file) {
+  if (!file) {
+    return;
+  }
+  const text = await readFileText(file);
+  const parsed = JSON.parse(text);
+  const importedSettings = parsed && typeof parsed === "object" && parsed.settings && typeof parsed.settings === "object"
+    ? parsed.settings
+    : parsed;
+  if (!importedSettings || typeof importedSettings !== "object" || Array.isArray(importedSettings)) {
+    throw new Error("Invalid settings file.");
+  }
+
+  const response = await sendMessage("SAVE_SETTINGS", { settings: importedSettings });
+  settings = response.settings;
+  editMode = false;
+  editDraft = null;
+  ensureSettingsShape(settings);
+  closeAddMoreModal();
+  render();
+  renderSettingsForm();
+  setActiveView("settings");
+}
+
 function runEngineSearch(engineId) {
   const queryInput = document.getElementById("query-input");
   if (!(queryInput instanceof HTMLInputElement)) {
@@ -1127,6 +1197,7 @@ function bindEvents() {
   const clearButton = document.getElementById("clear-query");
   const openInBackgroundInput = document.getElementById("setting-open-background");
   const openNextInput = document.getElementById("setting-open-next");
+  const importFileInput = document.getElementById("import-engine-file");
 
   if (queryInput instanceof HTMLInputElement) {
     queryInput.addEventListener("focus", () => {
@@ -1223,6 +1294,20 @@ function bindEvents() {
   document.addEventListener("change", (event) => {
     const target = event.target;
     if (!(target instanceof HTMLInputElement)) {
+      return;
+    }
+    if (target.id === "import-engine-file") {
+      const file = target.files && target.files.length ? target.files[0] : null;
+      importEngineListFromFile(file)
+        .then(() => {
+          showToast("Engine list imported.");
+        })
+        .catch(() => {
+          showToast("Import failed. Use a valid JSON export file.");
+        })
+        .finally(() => {
+          target.value = "";
+        });
       return;
     }
     if (target.name !== "enabled-engine") {
@@ -1330,6 +1415,9 @@ function bindEvents() {
     }
 
     if (button.id === "go-list-view") {
+      if (editMode) {
+        exitEditMode();
+      }
       setActiveView("menu");
       return;
     }
@@ -1340,6 +1428,18 @@ function bindEvents() {
         .finally(() => {
           chrome.tabs.create({ url: "chrome://extensions/shortcuts" });
         });
+      return;
+    }
+
+    if (button.id === "export-engine-list") {
+      exportEngineList();
+      return;
+    }
+
+    if (button.id === "import-engine-list") {
+      if (importFileInput instanceof HTMLInputElement) {
+        importFileInput.click();
+      }
       return;
     }
 
