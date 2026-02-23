@@ -7,12 +7,12 @@
   --primary: #175bd8;
   --primary-ink: #ffffff;
   --content-width: 760px;
-  --toggle-off-bg: #e7edf5;
-  --toggle-off-border: #d4deeb;
-  --toggle-on-bg: #9fb4d8;
-  --toggle-on-border: #8ea6cc;
+  --toggle-off-bg: #e6eaf1;
+  --toggle-off-border: #cfd7e4;
+  --toggle-on-bg: #e7a0a0;
+  --toggle-on-border: #d88a8a;
   --toggle-thumb: #ffffff;
-  --toggle-focus: rgba(23, 91, 216, 0.16);
+  --toggle-focus: rgba(226, 85, 85, 0.2);
   --popup-view-height: 560px;
 }
 
@@ -145,6 +145,16 @@ button {
   stroke-width: 2;
   stroke-linecap: round;
   stroke-linejoin: round;
+}
+
+.icon-btn-logo {
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+
+.logo-nav-btn {
+  font-size: 0;
 }
 
 .primary {
@@ -388,21 +398,20 @@ button {
 }
 
 .engine-item {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 6px;
+  display: block;
   padding: 2px 0;
   font-size: 14px;
   min-width: 0;
 }
 
 .engine-main {
-  display: flex;
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr);
   align-items: center;
-  gap: 8px;
+  justify-items: start;
+  column-gap: 8px;
   min-width: 0;
-  flex: 1 1 auto;
+  width: 100%;
 }
 
 .drag-handle {
@@ -419,11 +428,23 @@ button {
 }
 
 .engine-item-edit {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 6px;
   cursor: move;
 }
 
 .engine-item-edit.is-dragging {
   opacity: 0.45;
+}
+
+.engine-item-edit .engine-main {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  width: auto;
+  flex: 1 1 auto;
 }
 
 .engine-switch {
@@ -432,6 +453,8 @@ button {
   height: 18px;
   display: inline-flex;
   align-items: center;
+  justify-self: start;
+  margin-left: 0;
 }
 
 .engine-toggle-input {
@@ -482,16 +505,17 @@ button {
   background: transparent;
   color: var(--ink);
   border-radius: 8px;
-  padding: 3px 8px;
+  padding: 3px 6px;
   font-size: 14px;
   font-weight: 500;
   text-align: left;
   min-width: 0;
+  width: 100%;
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  flex: 0 1 auto;
+  justify-self: stretch;
 }
 
 .search-btn:hover {

@@ -1329,6 +1329,11 @@ function bindEvents() {
       return;
     }
 
+    if (button.id === "go-list-view") {
+      setActiveView("menu");
+      return;
+    }
+
     if (button.id === "open-shortcuts") {
       Promise.all([flushAutosave(), persistCurrentQuery()])
         .catch(() => undefined)

@@ -1,14 +1,13 @@
 import { BUILTIN_ENGINE_IDS, CATEGORY_ORDER, getAvailableEngines, sanitizeCustomEngine } from "./engines.js";
 
 const LEGACY_BUILTIN_ID_MAP = Object.freeze({
-  gemini: "youcom"
+  gemini: "custom-exa"
 });
 
 const LAYOUT_COLUMN_COUNT = 3;
 const STARTER_VISIBLE_BUILTIN_IDS = Object.freeze([
   "chatgpt",
   "perplexity",
-  "youcom",
   "youtube",
   "reddit",
   "twitter",
@@ -27,6 +26,12 @@ const STARTER_VISIBLE_BUILTIN_IDS = Object.freeze([
 
 const DEFAULT_CUSTOM_ENGINES = Object.freeze([
   {
+    id: "custom-exa",
+    name: "Exa",
+    category: "AI",
+    urlTemplate: "https://exa.ai/search/s?s=%s"
+  },
+  {
     id: "custom-codepen",
     name: "CodePen",
     category: "Tech",
@@ -35,22 +40,32 @@ const DEFAULT_CUSTOM_ENGINES = Object.freeze([
 ]);
 
 const DEFAULT_CUSTOM_ENGINE_IDS = DEFAULT_CUSTOM_ENGINES.map((engine) => engine.id);
-const DEFAULT_ENABLED_BUILTIN_IDS = STARTER_VISIBLE_BUILTIN_IDS;
-const DEFAULT_ENABLED_ENGINE_IDS = [...DEFAULT_ENABLED_BUILTIN_IDS, ...DEFAULT_CUSTOM_ENGINE_IDS];
+const DEFAULT_ENABLED_CUSTOM_ENGINE_IDS = Object.freeze(["custom-exa"]);
+const DEFAULT_ENABLED_BUILTIN_IDS = Object.freeze([
+  "chatgpt",
+  "perplexity",
+  "youtube",
+  "reddit",
+  "twitter",
+  "wikipedia",
+  "google-maps",
+  "grokopedia"
+]);
+const DEFAULT_ENABLED_ENGINE_IDS = [...DEFAULT_ENABLED_BUILTIN_IDS, ...DEFAULT_ENABLED_CUSTOM_ENGINE_IDS];
 const DEFAULT_HIDDEN_BUILTIN_IDS = BUILTIN_ENGINE_IDS.filter((id) => !STARTER_VISIBLE_BUILTIN_IDS.includes(id));
 const DEFAULT_ENGINE_ID_SET = new Set([...BUILTIN_ENGINE_IDS, ...DEFAULT_CUSTOM_ENGINE_IDS]);
 const DEFAULT_LAYOUT_COLUMNS = Object.freeze([
   [
-    { id: "ai", name: "AI", engineIds: ["chatgpt", "perplexity", "youcom"] },
-    { id: "social-media", name: "Social Media", engineIds: ["youtube", "reddit", "twitter"] }
-  ],
-  [
-    { id: "web", name: "Web", engineIds: ["google", "bing", "duckduckgo"] },
+    { id: "ai", name: "AI", engineIds: ["chatgpt", "perplexity", "custom-exa"] },
     { id: "productivity", name: "Productivity", engineIds: ["gmail", "google-drive", "notion"] }
   ],
   [
-    { id: "utilities", name: "Utilities", engineIds: ["wikipedia", "google-maps", "grokopedia"] },
+    { id: "social-media", name: "Social Media", engineIds: ["youtube", "reddit", "twitter"] },
     { id: "tech", name: "Tech", engineIds: ["github", "stackoverflow", "custom-codepen"] }
+  ],
+  [
+    { id: "utilities", name: "Utilities", engineIds: ["wikipedia", "google-maps", "grokopedia"] },
+    { id: "web", name: "Web", engineIds: ["google", "bing", "duckduckgo"] }
   ]
 ]);
 

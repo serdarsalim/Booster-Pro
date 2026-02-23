@@ -488,6 +488,10 @@
         "url": "https://chatgpt.com/?q=%s"
       },
       {
+        "name": "Exa",
+        "url": "https://exa.ai/search/s?s=%s"
+      },
+      {
         "name": "Futurepedia",
         "url": "https://www.futurepedia.io/search?search=%s"
       },

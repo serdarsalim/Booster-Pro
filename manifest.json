@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Booster PRO",
   "description": "Modern right-click and left-click context search with AI-first routing and smart search stacks.",
-  "version": "2.0.0",
+  "version": "2026.2.23",
   "permissions": [
     "contextMenus",
     "storage"
