@@ -718,12 +718,15 @@ function renderEngineItem(engine, enabledSet) {
   }
 
   const checked = enabledSet.has(engine.id) ? "checked" : "";
+  const visibilityLabel = checked
+    ? "Hide from right-click menu"
+    : "Show in right-click menu";
   return `
     <div class="engine-item">
       <span class="engine-main">
-        <label class="engine-switch" aria-label="Toggle ${escapeHtml(engine.name)}">
-          <input class="engine-toggle-input" type="checkbox" name="enabled-engine" value="${escapeHtml(engine.id)}" ${checked}>
-          <span class="engine-toggle"></span>
+        <label class="engine-visibility" aria-label="${escapeHtml(visibilityLabel)}" title="${escapeHtml(visibilityLabel)}">
+          <input class="engine-visibility-input" type="checkbox" name="enabled-engine" value="${escapeHtml(engine.id)}" ${checked}>
+          <span class="engine-visibility-icon" aria-hidden="true"></span>
         </label>
         <button type="button" class="search-btn" data-search-id="${escapeHtml(engine.id)}">${escapeHtml(engine.name)}</button>
       </span>
