@@ -41,13 +41,6 @@ function normalizeScope(rawScope) {
   return value;
 }
 
-function isGoogleOwnedHost(hostname) {
-  if (!hostname) {
-    return false;
-  }
-  return hostname === "google.com" || hostname.endsWith(".google.com");
-}
-
 function deriveScopeFromTemplate(urlTemplate) {
   if (typeof urlTemplate !== "string" || !urlTemplate.trim()) {
     return "";
@@ -56,12 +49,14 @@ function deriveScopeFromTemplate(urlTemplate) {
   try {
     const parsed = new URL(urlTemplate);
     const host = normalizeHost(parsed.hostname);
-    if (!host || isGoogleOwnedHost(host)) {
+    if (!host) {
       return "";
     }
     return normalizeScope(host);
   } catch (_error) {
-    return "";
+    const fallbackMatch = String(urlTemplate).match(/^https?:\/\/([^/?#]+)/i);
+    const host = normalizeHost(fallbackMatch ? fallbackMatch[1] : "");
+    return normalizeScope(host);
   }
 }
 
@@ -114,21 +109,15 @@ export function sanitizeGoogleAnyMode(rawMode) {
 export function getGoogleAnySources(settings) {
   const pool = getGoogleAnyEnginePool(settings);
   const sources = [];
-  const unmapped = [];
   const seenScopes = new Set();
 
   pool.forEach((engine) => {
-    if (!engine || typeof engine !== "object" || typeof engine.id !== "string" || engine.id === "google") {
+    if (!engine || typeof engine !== "object" || typeof engine.id !== "string") {
       return;
     }
 
     const scope = resolveScope(engine);
     if (!scope) {
-      unmapped.push({
-        engineId: engine.id,
-        name: engine.name,
-        category: engine.category
-      });
       return;
     }
 
@@ -153,15 +142,7 @@ export function getGoogleAnySources(settings) {
     return a.name.localeCompare(b.name);
   });
 
-  unmapped.sort((a, b) => {
-    const categoryDelta = getCategorySortIndex(a.category) - getCategorySortIndex(b.category);
-    if (categoryDelta !== 0) {
-      return categoryDelta;
-    }
-    return a.name.localeCompare(b.name);
-  });
-
-  return { sources, unmapped };
+  return { sources };
 }
 
 export function getDefaultGoogleAnySourceIds(sources) {

@@ -2,7 +2,6 @@ import { BUILTIN_ENGINES, CATEGORY_ORDER, getAvailableEngines } from "../shared/
 import { DEFAULT_SETTINGS } from "../shared/defaultSettings.js";
 import {
   GOOGLE_ANY_MODE,
-  buildGoogleAnyCombinedQuery,
   getDefaultGoogleAnySourceIds,
   getGoogleAnySources,
   sanitizeGoogleAnyMode
@@ -453,80 +452,12 @@ function renderSettingsForm() {
   }
 }
 
-function readGoogleAnyQuery() {
-  const googleAnyQueryInput = document.getElementById("google-any-query-input");
-  if (googleAnyQueryInput instanceof HTMLInputElement) {
-    return googleAnyQueryInput.value.trim();
-  }
+function readMainQuery() {
   const queryInput = document.getElementById("query-input");
   if (queryInput instanceof HTMLInputElement) {
     return queryInput.value.trim();
   }
   return "";
-}
-
-function syncGoogleAnyQueryToMain(nextQuery) {
-  const queryInput = document.getElementById("query-input");
-  if (queryInput instanceof HTMLInputElement) {
-    queryInput.value = nextQuery;
-    updateQueryControls();
-    persistCurrentQuery().catch(() => undefined);
-  }
-}
-
-function getGoogleAnyPresetEngineIds(presetId, sources) {
-  const list = Array.isArray(sources) ? sources : [];
-  if (!list.length) {
-    return [];
-  }
-
-  if (presetId === "balanced") {
-    return getDefaultGoogleAnySourceIds(list);
-  }
-
-  const categoriesByPreset = {
-    social: new Set(["Social"]),
-    dev: new Set(["Tech"]),
-    research: new Set(["Research", "News"]),
-    shopping: new Set(["Shopping"])
-  };
-  const categorySet = categoriesByPreset[presetId];
-  if (!categorySet) {
-    return [];
-  }
-
-  const ids = list
-    .filter((entry) => categorySet.has(entry.category))
-    .map((entry) => entry.engineId);
-  return ids.length ? ids : getDefaultGoogleAnySourceIds(list);
-}
-
-function renderGoogleAnyPreview(currentSettings, selectedEntries) {
-  const previewInput = document.getElementById("google-any-preview");
-  const previewMeta = document.getElementById("google-any-preview-meta");
-  if (!(previewInput instanceof HTMLInputElement) || !(previewMeta instanceof HTMLElement)) {
-    return;
-  }
-
-  const mode = currentSettings.googleAnyPlatform.mode;
-  const query = readGoogleAnyQuery() || "<selected text>";
-  const scopes = selectedEntries.map((entry) => entry.scope);
-  const selectedCount = selectedEntries.length;
-
-  if (!selectedCount) {
-    previewInput.value = "";
-    previewMeta.textContent = "No platforms selected.";
-    return;
-  }
-
-  if (mode === GOOGLE_ANY_MODE.SEPARATE) {
-    previewInput.value = `${query} site:${scopes[0]}${scopes.length > 1 ? " ..." : ""}`;
-    previewMeta.textContent = `Included platforms: ${selectedCount}. This will open ${selectedCount} tabs.`;
-    return;
-  }
-
-  previewInput.value = buildGoogleAnyCombinedQuery(query, scopes);
-  previewMeta.textContent = `Included platforms: ${selectedCount}. This will open 1 tab.`;
 }
 
 function renderGoogleAnyView() {
@@ -536,18 +467,9 @@ function renderGoogleAnyView() {
   }
   ensureSettingsShape(currentSettings);
 
-  const queryInput = document.getElementById("query-input");
-  const googleAnyQueryInput = document.getElementById("google-any-query-input");
-  if (googleAnyQueryInput instanceof HTMLInputElement && queryInput instanceof HTMLInputElement) {
-    googleAnyQueryInput.value = queryInput.value;
-  }
-
-  const { sources, unmapped } = getGoogleAnySources(currentSettings);
+  const { sources } = getGoogleAnySources(currentSettings);
   const sourceById = new Map(sources.map((entry) => [entry.engineId, entry]));
   const selectedIds = currentSettings.googleAnyPlatform.selectedEngineIds;
-  const selectedEntries = selectedIds
-    .map((engineId) => sourceById.get(engineId))
-    .filter((entry) => Boolean(entry));
 
   const modeCombined = document.querySelector("input[name=\"google-any-mode\"][value=\"combined\"]");
   const modeSeparate = document.querySelector("input[name=\"google-any-mode\"][value=\"separate\"]");
@@ -587,20 +509,6 @@ function renderGoogleAnyView() {
         .join("");
     }
   }
-
-  const unmappedList = document.getElementById("google-any-unmapped-list");
-  if (unmappedList instanceof HTMLElement) {
-    if (!unmapped.length) {
-      unmappedList.textContent = "All current engines can be mapped to a Google site scope.";
-    } else {
-      unmappedList.innerHTML = unmapped
-        .slice(0, 16)
-        .map((entry) => `${escapeHtml(entry.name)} (${escapeHtml(entry.category)})`)
-        .join("<br>");
-    }
-  }
-
-  renderGoogleAnyPreview(currentSettings, selectedEntries);
 }
 
 function getFilteredGoogleAnySources(currentSettings) {
@@ -746,17 +654,16 @@ function runEngineSearch(engineId) {
 }
 
 function runGoogleAnySearch() {
-  const query = readGoogleAnyQuery();
+  const query = readMainQuery();
   if (!query) {
-    const googleAnyQueryInput = document.getElementById("google-any-query-input");
-    if (googleAnyQueryInput instanceof HTMLInputElement) {
-      googleAnyQueryInput.focus();
+    const queryInput = document.getElementById("query-input");
+    if (queryInput instanceof HTMLInputElement) {
+      queryInput.focus();
     }
     showToast("Enter a query first.");
     return;
   }
 
-  syncGoogleAnyQueryToMain(query);
   sendMessage("RUN_GOOGLE_ANY", { query }).catch(() => undefined);
 }
 
@@ -1522,12 +1429,6 @@ function bindEvents() {
       return;
     }
 
-    if (target.id === "google-any-query-input" && target instanceof HTMLInputElement) {
-      syncGoogleAnyQueryToMain(target.value);
-      renderGoogleAnyView();
-      return;
-    }
-
     if (!editMode || !editDraft) {
       return;
     }
@@ -1762,49 +1663,6 @@ function bindEvents() {
       return;
     }
 
-    if (button.id === "google-any-select-all-visible") {
-      if (!settings) {
-        return;
-      }
-      ensureSettingsShape(settings);
-      const selected = new Set(settings.googleAnyPlatform.selectedEngineIds || []);
-      getFilteredGoogleAnySources(settings).forEach((entry) => selected.add(entry.engineId));
-      settings.googleAnyPlatform.selectedEngineIds = Array.from(selected);
-      queueAutosave();
-      renderGoogleAnyView();
-      return;
-    }
-
-    if (button.id === "google-any-clear-all-visible") {
-      if (!settings) {
-        return;
-      }
-      ensureSettingsShape(settings);
-      const visibleIds = new Set(getFilteredGoogleAnySources(settings).map((entry) => entry.engineId));
-      const next = (settings.googleAnyPlatform.selectedEngineIds || []).filter((engineId) => !visibleIds.has(engineId));
-      settings.googleAnyPlatform.selectedEngineIds = next;
-      queueAutosave();
-      renderGoogleAnyView();
-      return;
-    }
-
-    if (button.id === "google-any-preset-balanced"
-      || button.id === "google-any-preset-social"
-      || button.id === "google-any-preset-dev"
-      || button.id === "google-any-preset-research"
-      || button.id === "google-any-preset-shopping") {
-      if (!settings) {
-        return;
-      }
-      ensureSettingsShape(settings);
-      const { sources } = getGoogleAnySources(settings);
-      const presetId = button.id.replace("google-any-preset-", "");
-      settings.googleAnyPlatform.selectedEngineIds = getGoogleAnyPresetEngineIds(presetId, sources);
-      queueAutosave();
-      renderGoogleAnyView();
-      return;
-    }
-
     if (button.id === "google-any-reset-defaults") {
       if (!settings) {
         return;
@@ -1863,15 +1721,6 @@ function bindEvents() {
   });
 
   document.addEventListener("keydown", (event) => {
-    const target = event.target;
-    if (event.key === "Enter"
-      && target instanceof HTMLInputElement
-      && target.id === "google-any-query-input") {
-      event.preventDefault();
-      runGoogleAnySearch();
-      return;
-    }
-
     if (event.key === "Escape") {
       const modal = document.getElementById("add-more-modal");
       if (modal instanceof HTMLElement && !modal.hidden) {

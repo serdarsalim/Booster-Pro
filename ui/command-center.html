@@ -79,44 +79,28 @@
 
         <div class="google-any-block">
           <h3>Mode</h3>
-          <label class="google-any-mode-row">
-            <input type="radio" name="google-any-mode" value="combined">
-            <span>One tab (combined)</span>
-          </label>
-          <label class="google-any-mode-row">
-            <input type="radio" name="google-any-mode" value="separate">
-            <span>Separate tabs (per platform)</span>
-          </label>
-        </div>
-
-        <div class="google-any-block">
-          <h3>Preview Query</h3>
-          <input id="google-any-query-input" type="text" placeholder="Type query for preview and run">
-          <input id="google-any-preview" type="text" readonly>
-          <div id="google-any-preview-meta" class="google-any-meta"></div>
+          <div class="google-any-block-body">
+            <div class="google-any-mode-toggle" role="radiogroup" aria-label="Google any mode">
+              <label class="google-any-mode-option">
+                <input type="radio" name="google-any-mode" value="combined">
+                <span>One tab</span>
+              </label>
+              <label class="google-any-mode-option">
+                <input type="radio" name="google-any-mode" value="separate">
+                <span>Multi tab</span>
+              </label>
+            </div>
+          </div>
         </div>
 
         <div class="google-any-block">
           <h3>Platforms</h3>
-          <div class="google-any-actions-row">
-            <input id="google-any-filter-input" type="text" placeholder="Filter platforms">
-            <button id="google-any-select-all-visible" class="ghost" type="button">Select all visible</button>
-            <button id="google-any-clear-all-visible" class="ghost" type="button">Clear all visible</button>
+          <div class="google-any-block-body">
+            <div class="google-any-actions-row">
+              <input id="google-any-filter-input" type="text" placeholder="Filter platforms">
+            </div>
+            <div id="google-any-source-list" class="google-any-source-list"></div>
           </div>
-          <div class="google-any-presets">
-            <span>Presets:</span>
-            <button id="google-any-preset-balanced" class="ghost" type="button">Balanced</button>
-            <button id="google-any-preset-social" class="ghost" type="button">Social</button>
-            <button id="google-any-preset-dev" class="ghost" type="button">Dev</button>
-            <button id="google-any-preset-research" class="ghost" type="button">Research</button>
-            <button id="google-any-preset-shopping" class="ghost" type="button">Shopping</button>
-          </div>
-          <div id="google-any-source-list" class="google-any-source-list"></div>
-        </div>
-
-        <div class="google-any-block">
-          <h3>Unmapped (excluded)</h3>
-          <div id="google-any-unmapped-list" class="google-any-unmapped-list"></div>
         </div>
 
         <div class="google-any-footer">

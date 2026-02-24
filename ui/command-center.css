@@ -716,20 +716,66 @@ button {
   background: #fbfdff;
   padding: 10px;
   display: grid;
-  gap: 8px;
+  grid-template-columns: 110px minmax(0, 1fr);
+  column-gap: 10px;
+  align-items: start;
 }
 
 .google-any-block h3 {
   margin: 0;
   font-size: 13px;
   color: #445676;
+  padding-top: 7px;
 }
 
-.google-any-mode-row {
+.google-any-block-body {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.google-any-mode-toggle {
+  display: flex;
+  gap: 6px;
+}
+
+.google-any-mode-option {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.google-any-mode-option input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.google-any-mode-option span {
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 7px 10px;
+  background: #fff;
+  color: #334865;
   font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease;
+}
+
+.google-any-mode-option input:checked + span {
+  border-color: #7fa6e6;
+  background: #eaf2ff;
+  color: #134897;
+}
+
+.google-any-mode-option input:focus-visible + span {
+  outline: 2px solid #9eb7df;
+  outline-offset: 2px;
 }
 
 .google-any-block input[type="text"] {
@@ -740,30 +786,11 @@ button {
   width: 100%;
 }
 
-#google-any-preview {
-  background: #f6f9ff;
-  color: #32445f;
-}
-
-.google-any-meta {
-  font-size: 12px;
-  color: #5c6f90;
-}
-
 .google-any-actions-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-columns: minmax(0, 1fr);
   gap: 8px;
   align-items: center;
-}
-
-.google-any-presets {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  align-items: center;
-  font-size: 12px;
-  color: #4d6183;
 }
 
 .google-any-source-list {
@@ -814,17 +841,6 @@ button {
   color: #6a7d9d;
   font-size: 12px;
   text-align: center;
-}
-
-.google-any-unmapped-list {
-  border: 1px dashed #d8e2f2;
-  border-radius: 8px;
-  background: #fff;
-  padding: 8px 10px;
-  display: grid;
-  gap: 4px;
-  font-size: 12px;
-  color: #5a6e8f;
 }
 
 .google-any-footer {
@@ -1025,8 +1041,13 @@ button {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .google-any-actions-row {
+  .google-any-block {
     grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .google-any-block h3 {
+    padding-top: 0;
   }
 
   .google-any-source-row {
