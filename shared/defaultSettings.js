@@ -100,7 +100,7 @@ const CATEGORY_COLUMN_INDEX = Object.freeze({
 });
 
 export const DEFAULT_SETTINGS = {
-  schemaVersion: 5,
+  schemaVersion: 6,
   enabledEngineIds: DEFAULT_ENABLED_ENGINE_IDS.filter((id) => DEFAULT_ENGINE_ID_SET.has(id)),
   hiddenBuiltinIds: DEFAULT_HIDDEN_BUILTIN_IDS,
   customEngines: DEFAULT_CUSTOM_ENGINES.map((engine) => ({ ...engine })),
@@ -112,7 +112,8 @@ export const DEFAULT_SETTINGS = {
   }))),
   behavior: {
     openInBackground: true,
-    openNextToCurrent: true
+    openNextToCurrent: true,
+    darkMode: false
   },
   googleAnyPlatform: {
     mode: GOOGLE_ANY_MODE.COMBINED,
@@ -412,7 +413,11 @@ export function sanitizeSettings(rawSettings) {
     openNextToCurrent:
       settings.behavior && typeof settings.behavior.openNextToCurrent === "boolean"
         ? settings.behavior.openNextToCurrent
-        : DEFAULT_SETTINGS.behavior.openNextToCurrent
+        : DEFAULT_SETTINGS.behavior.openNextToCurrent,
+    darkMode:
+      settings.behavior && typeof settings.behavior.darkMode === "boolean"
+        ? settings.behavior.darkMode
+        : DEFAULT_SETTINGS.behavior.darkMode
   };
   const googleAnySources = getGoogleAnySources({
     customEngines,

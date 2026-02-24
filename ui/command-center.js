@@ -360,6 +360,9 @@ function ensureSettingsShape(targetSettings) {
   if (typeof targetSettings.behavior.openNextToCurrent !== "boolean") {
     targetSettings.behavior.openNextToCurrent = DEFAULT_SETTINGS.behavior.openNextToCurrent;
   }
+  if (typeof targetSettings.behavior.darkMode !== "boolean") {
+    targetSettings.behavior.darkMode = DEFAULT_SETTINGS.behavior.darkMode;
+  }
 
   if (!targetSettings.engineLabelOverrides || typeof targetSettings.engineLabelOverrides !== "object") {
     targetSettings.engineLabelOverrides = {};
@@ -449,6 +452,25 @@ function renderSettingsForm() {
   }
   if (openNextInput instanceof HTMLInputElement) {
     openNextInput.checked = Boolean(settings.behavior.openNextToCurrent);
+  }
+}
+
+function applyTheme(targetSettings) {
+  const nextSettings = targetSettings || settings;
+  if (!nextSettings) {
+    return;
+  }
+  ensureSettingsShape(nextSettings);
+
+  const darkMode = Boolean(nextSettings.behavior.darkMode);
+  document.body.classList.toggle("theme-dark", darkMode);
+
+  const themeButton = document.getElementById("toggle-theme");
+  if (themeButton instanceof HTMLButtonElement) {
+    themeButton.textContent = darkMode ? "\u2600" : "\u263D";
+    themeButton.title = darkMode ? "Enable light mode" : "Enable dark mode";
+    themeButton.setAttribute("aria-label", darkMode ? "Enable light mode" : "Enable dark mode");
+    themeButton.setAttribute("aria-pressed", darkMode ? "true" : "false");
   }
 }
 
@@ -959,6 +981,7 @@ function render() {
   if (activeView === "google-any") {
     renderGoogleAnyView();
   }
+  applyTheme(workingSettings);
 
   document.body.classList.toggle("is-edit-mode", editMode);
   updateTopActionButtons();
@@ -1599,6 +1622,18 @@ function bindEvents() {
       }
       renderSettingsForm();
       setActiveView("settings");
+      return;
+    }
+
+    if (button.id === "toggle-theme") {
+      const source = getWorkingSettings();
+      if (!source) {
+        return;
+      }
+      ensureSettingsShape(source);
+      source.behavior.darkMode = !source.behavior.darkMode;
+      applyTheme(source);
+      queueAutosave();
       return;
     }
 
