@@ -179,6 +179,9 @@ export function getDefaultGoogleAnySourceIds(sources) {
 
 export function getGoogleAnySelectedSources(settings) {
   const { sources } = getGoogleAnySources(settings);
+  const hasStoredSelection = settings
+    && settings.googleAnyPlatform
+    && Array.isArray(settings.googleAnyPlatform.selectedEngineIds);
   const selected = settings
     && settings.googleAnyPlatform
     && Array.isArray(settings.googleAnyPlatform.selectedEngineIds)
@@ -190,7 +193,7 @@ export function getGoogleAnySelectedSources(settings) {
     .map((engineId) => byId.get(engineId))
     .filter((entry) => Boolean(entry));
 
-  if (selectedEntries.length) {
+  if (hasStoredSelection) {
     return selectedEntries;
   }
 
@@ -205,11 +208,13 @@ export function buildGoogleAnyCombinedQuery(query, scopes) {
   if (!trimmedQuery) {
     return "";
   }
-  const uniqueScopes = Array.from(new Set((Array.isArray(scopes) ? scopes : []).map((scope) => normalizeScope(scope)).filter(Boolean)));
-  if (!uniqueScopes.length) {
+  const tokens = Array.from(new Set((Array.isArray(scopes) ? scopes : [])
+    .map((value) => formatKeywordToken(value))
+    .filter(Boolean)));
+  if (!tokens.length) {
     return "";
   }
-  const clause = uniqueScopes.map((scope) => `site:${scope}`).join(" OR ");
+  const clause = tokens.join(" OR ");
   return `${trimmedQuery} (${clause})`;
 }
 
@@ -224,27 +229,13 @@ function formatKeywordToken(keyword) {
   return trimmed;
 }
 
-function buildQueryWithManualKeywords(query, manualKeywords) {
+function buildGoogleAnySingleQuery(query, keyword) {
   const trimmedQuery = String(query || "").trim();
-  if (!trimmedQuery) {
+  const token = formatKeywordToken(keyword);
+  if (!trimmedQuery || !token) {
     return "";
   }
-  const tokens = normalizeGoogleAnyKeywords(manualKeywords)
-    .map((keyword) => formatKeywordToken(keyword))
-    .filter(Boolean);
-  if (!tokens.length) {
-    return trimmedQuery;
-  }
-  return `${trimmedQuery} (${tokens.join(" OR ")})`;
-}
-
-function buildGoogleAnySingleQuery(query, scope) {
-  const trimmedQuery = String(query || "").trim();
-  const normalizedScope = normalizeScope(scope);
-  if (!trimmedQuery || !normalizedScope) {
-    return "";
-  }
-  return `${trimmedQuery} site:${normalizedScope}`;
+  return `${trimmedQuery} ${token}`;
 }
 
 function toGoogleSearchUrl(query) {
@@ -259,22 +250,23 @@ export function buildGoogleAnyUrls(query, settings) {
     ? settings.googleAnyPlatform.manualKeywords
     : [];
   const selectedSources = getGoogleAnySelectedSources(settings);
-  const scopes = selectedSources.map((entry) => entry.scope);
-  const queryWithManualKeywords = buildQueryWithManualKeywords(query, manualKeywords);
-  if (!queryWithManualKeywords) {
-    return [];
-  }
-  if (!scopes.length) {
+  const selectedKeywords = selectedSources.map((entry) => entry.name);
+  const allKeywords = Array.from(new Set([
+    ...normalizeGoogleAnyKeywords(manualKeywords),
+    ...selectedKeywords.map((value) => String(value || "").trim()).filter(Boolean)
+  ]));
+  const trimmedQuery = String(query || "").trim();
+  if (!trimmedQuery || !allKeywords.length) {
     return [];
   }
 
   if (mode === GOOGLE_ANY_MODE.SEPARATE) {
-    return scopes
-      .map((scope) => buildGoogleAnySingleQuery(queryWithManualKeywords, scope))
+    return allKeywords
+      .map((keyword) => buildGoogleAnySingleQuery(trimmedQuery, keyword))
       .filter((value) => Boolean(value))
       .map((value) => toGoogleSearchUrl(value));
   }
 
-  const combined = buildGoogleAnyCombinedQuery(queryWithManualKeywords, scopes);
+  const combined = buildGoogleAnyCombinedQuery(trimmedQuery, allKeywords);
   return combined ? [toGoogleSearchUrl(combined)] : [];
 }

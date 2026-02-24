@@ -107,6 +107,24 @@ const dragState = {
 };
 
 const GOOGLE_ANY_PRESET_CATEGORIES = Object.freeze(["Social", "News", "Tech", "Utilities"]);
+const GOOGLE_ANY_EXCLUDED_ENGINE_IDS = new Set([
+  "ai-monitor",
+  "al-jazeera",
+  "devto",
+  "discord",
+  "docker-hub",
+  "gitlab",
+  "grokopedia",
+  "hacker-news",
+  "imdb",
+  "mdn",
+  "medium",
+  "npm",
+  "product-hunt",
+  "pypi",
+  "substack",
+  "tumblr"
+]);
 
 function sendMessage(type, payload = {}) {
   return new Promise((resolve, reject) => {
@@ -501,23 +519,10 @@ function readMainQuery() {
 
 function getGoogleAnyVisibleSources(currentSettings) {
   return getGoogleAnySources(currentSettings).sources
-    .filter((entry) => GOOGLE_ANY_PRESET_CATEGORIES.includes(entry.category));
-}
-
-function setGoogleAnyPreset(targetSettings, category) {
-  if (!targetSettings || !GOOGLE_ANY_PRESET_CATEGORIES.includes(category)) {
-    return;
-  }
-  const sources = getGoogleAnyVisibleSources(targetSettings);
-  const selectedSet = new Set(
-    Array.isArray(targetSettings.googleAnyPlatform.selectedEngineIds)
-      ? targetSettings.googleAnyPlatform.selectedEngineIds
-      : []
-  );
-  sources
-    .filter((entry) => entry.category === category)
-    .forEach((entry) => selectedSet.add(entry.engineId));
-  targetSettings.googleAnyPlatform.selectedEngineIds = Array.from(selectedSet);
+    .filter((entry) => (
+      GOOGLE_ANY_PRESET_CATEGORIES.includes(entry.category)
+      && !GOOGLE_ANY_EXCLUDED_ENGINE_IDS.has(entry.engineId)
+    ));
 }
 
 function renderGoogleAnyModeHelp(mode, selectedCount) {
@@ -551,10 +556,13 @@ function renderGoogleAnyView() {
   const sources = getGoogleAnyVisibleSources(currentSettings);
   const selectedIds = currentSettings.googleAnyPlatform.selectedEngineIds;
   const manualKeywords = normalizeGoogleAnyKeywords(currentSettings.googleAnyPlatform.manualKeywords);
-  const selectedCount = sources.filter((entry) => selectedIds.includes(entry.engineId)).length;
-  const selectedEntries = sources
-    .filter((entry) => selectedIds.includes(entry.engineId))
-    .sort((a, b) => a.name.localeCompare(b.name));
+  const selectedKeywordCount = new Set([
+    ...manualKeywords.map((keyword) => keyword.toLowerCase()),
+    ...sources
+      .filter((entry) => selectedIds.includes(entry.engineId))
+      .map((entry) => String(entry.name || "").trim().toLowerCase())
+      .filter(Boolean)
+  ]).size;
 
   const modeCombined = document.querySelector("input[name=\"google-any-mode\"][value=\"combined\"]");
   const modeSeparate = document.querySelector("input[name=\"google-any-mode\"][value=\"separate\"]");
@@ -564,10 +572,10 @@ function renderGoogleAnyView() {
   if (modeSeparate instanceof HTMLInputElement) {
     modeSeparate.checked = currentSettings.googleAnyPlatform.mode === GOOGLE_ANY_MODE.SEPARATE;
   }
-  renderGoogleAnyModeHelp(currentSettings.googleAnyPlatform.mode, selectedCount);
+  renderGoogleAnyModeHelp(currentSettings.googleAnyPlatform.mode, selectedKeywordCount);
 
   const keywordsInput = document.getElementById("google-any-keywords-input");
-  if (keywordsInput instanceof HTMLInputElement) {
+  if (keywordsInput instanceof HTMLInputElement || keywordsInput instanceof HTMLTextAreaElement) {
     if (document.activeElement === keywordsInput && !googleAnyKeywordsInputRaw) {
       googleAnyKeywordsInputRaw = keywordsInput.value;
     }
@@ -581,41 +589,20 @@ function renderGoogleAnyView() {
     searchInput.value = googleAnySearchTerm;
   }
   const normalizedSearch = googleAnySearchTerm.trim().toLowerCase();
-  const filteredSources = normalizedSearch
+  const filteredSources = (normalizedSearch
     ? sources.filter((entry) => `${entry.name} ${entry.category}`.toLowerCase().includes(normalizedSearch))
-    : sources;
-
-  const selectedList = document.getElementById("google-any-selected-list");
-  if (selectedList instanceof HTMLElement) {
-    const manualKeywordPills = manualKeywords.map((keyword) => (
-      `<span class="google-any-selected-pill">
-        <span>${escapeHtml(keyword)}</span>
-        <button type="button" data-google-any-remove-keyword="${escapeHtml(keyword)}" aria-label="Remove ${escapeHtml(keyword)} keyword">&times;</button>
-      </span>`
-    ));
-    const selectedEntryPills = selectedEntries.map((entry) => (
-      `<span class="google-any-selected-pill">
-        <span>${escapeHtml(entry.name)}</span>
-        <button type="button" data-google-any-remove-id="${escapeHtml(entry.engineId)}" aria-label="Remove ${escapeHtml(entry.name)} keyword">&times;</button>
-      </span>`
-    ));
-    const pills = [...manualKeywordPills, ...selectedEntryPills];
-    if (!pills.length) {
-      selectedList.innerHTML = "<span class=\"google-any-selected-empty\">No keywords selected.</span>";
-    } else {
-      selectedList.innerHTML = pills.join("");
-    }
-  }
+    : sources)
+    .slice()
+    .sort((a, b) => a.name.localeCompare(b.name));
 
   if (sourceList instanceof HTMLElement) {
     sourceList.innerHTML = filteredSources.length
       ? filteredSources.map((entry) => {
         const checked = selectedIds.includes(entry.engineId) ? "checked" : "";
         return `
-          <label class="google-any-source-row">
+          <label class="google-any-source-chip">
             <input type="checkbox" data-google-any-source-id="${escapeHtml(entry.engineId)}" ${checked}>
             <span class="google-any-source-name">${escapeHtml(entry.name)}</span>
-            <span class="google-any-source-category-tag">${escapeHtml(entry.category)}</span>
           </label>
         `;
       }).join("")
@@ -623,17 +610,6 @@ function renderGoogleAnyView() {
     sourceList.scrollTop = sourceListScrollTop;
   }
 
-  GOOGLE_ANY_PRESET_CATEGORIES.forEach((category) => {
-    const button = document.getElementById(`google-any-preset-${category.toLowerCase()}`);
-    if (button instanceof HTMLButtonElement) {
-      const categoryIds = sources
-        .filter((entry) => entry.category === category)
-        .map((entry) => entry.engineId);
-      const active = categoryIds.length > 0 && categoryIds.every((engineId) => selectedIds.includes(engineId));
-      button.classList.toggle("is-active", active);
-      button.setAttribute("aria-pressed", active ? "true" : "false");
-    }
-  });
 }
 
 function isCustomId(engineId) {
@@ -1545,7 +1521,8 @@ function bindEvents() {
       return;
     }
 
-    if (target.id === "google-any-keywords-input" && target instanceof HTMLInputElement) {
+    if (target.id === "google-any-keywords-input"
+      && (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement)) {
       if (!settings) {
         return;
       }
@@ -1589,7 +1566,7 @@ function bindEvents() {
 
   document.addEventListener("change", (event) => {
     const target = event.target;
-    if (!(target instanceof HTMLInputElement)) {
+    if (!(target instanceof HTMLInputElement) && !(target instanceof HTMLTextAreaElement)) {
       return;
     }
     if (target.id === "google-any-keywords-input") {
@@ -1656,34 +1633,6 @@ function bindEvents() {
   document.addEventListener("click", (event) => {
     const target = event.target;
     if (!(target instanceof HTMLElement)) {
-      return;
-    }
-
-    const googleAnyRemoveId = target.getAttribute("data-google-any-remove-id");
-    if (googleAnyRemoveId) {
-      if (!settings) {
-        return;
-      }
-      ensureSettingsShape(settings);
-      settings.googleAnyPlatform.selectedEngineIds = (settings.googleAnyPlatform.selectedEngineIds || [])
-        .filter((engineId) => engineId !== googleAnyRemoveId);
-      queueAutosave();
-      renderGoogleAnyView();
-      return;
-    }
-
-    const googleAnyRemoveKeyword = target.getAttribute("data-google-any-remove-keyword");
-    if (googleAnyRemoveKeyword) {
-      if (!settings) {
-        return;
-      }
-      ensureSettingsShape(settings);
-      settings.googleAnyPlatform.manualKeywords = normalizeGoogleAnyKeywords(
-        (settings.googleAnyPlatform.manualKeywords || [])
-          .filter((keyword) => keyword !== googleAnyRemoveKeyword)
-      );
-      queueAutosave();
-      renderGoogleAnyView();
       return;
     }
 
@@ -1768,6 +1717,11 @@ function bindEvents() {
       return;
     }
 
+    if (button.id === "google-any-run-inline") {
+      runGoogleAnySearch();
+      return;
+    }
+
     if (button.id === "toggle-theme") {
       const source = getWorkingSettings();
       if (!source) {
@@ -1838,50 +1792,6 @@ function bindEvents() {
 
     if (button.id === "add-manual-engine") {
       addManualEngineToActiveSection();
-      return;
-    }
-
-    if (button.id === "google-any-preset-social") {
-      if (!settings) {
-        return;
-      }
-      ensureSettingsShape(settings);
-      setGoogleAnyPreset(settings, "Social");
-      queueAutosave();
-      renderGoogleAnyView();
-      return;
-    }
-
-    if (button.id === "google-any-preset-news") {
-      if (!settings) {
-        return;
-      }
-      ensureSettingsShape(settings);
-      setGoogleAnyPreset(settings, "News");
-      queueAutosave();
-      renderGoogleAnyView();
-      return;
-    }
-
-    if (button.id === "google-any-preset-tech") {
-      if (!settings) {
-        return;
-      }
-      ensureSettingsShape(settings);
-      setGoogleAnyPreset(settings, "Tech");
-      queueAutosave();
-      renderGoogleAnyView();
-      return;
-    }
-
-    if (button.id === "google-any-preset-utilities") {
-      if (!settings) {
-        return;
-      }
-      ensureSettingsShape(settings);
-      setGoogleAnyPreset(settings, "Utilities");
-      queueAutosave();
-      renderGoogleAnyView();
       return;
     }
 

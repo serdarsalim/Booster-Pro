@@ -97,33 +97,29 @@
 
         <div class="google-any-block google-any-platforms-block">
           <div class="google-any-block-body">
-            <label class="google-any-field-title" for="google-any-keywords-input">Keywords</label>
-            <input
-              id="google-any-keywords-input"
-              type="text"
-              placeholder="e.g. profile, hiring, founder, san francisco"
-              aria-label="Keywords, comma separated"
-            >
-            <p class="google-any-copy">Add keywords manually, comma separated.</p>
+            <div class="google-any-inline-row">
+              <label class="google-any-field-title" for="google-any-keywords-input">Keywords</label>
+              <textarea
+                id="google-any-keywords-input"
+                rows="2"
+                placeholder="e.g. profile, hiring, founder, san francisco"
+                aria-label="Keywords, comma separated"
+              ></textarea>
+            </div>
 
-            <label class="google-any-field-title" for="google-any-engine-search">Add more from the list</label>
-            <input id="google-any-engine-search" type="text" placeholder="Search keywords">
-            <p class="google-any-copy">Select multiple keywords by clicking a filter:</p>
-
-            <div class="google-any-presets-row" role="tablist" aria-label="Google plus category presets">
-              <button id="google-any-preset-social" class="ghost google-any-preset-btn" type="button">Social</button>
-              <button id="google-any-preset-news" class="ghost google-any-preset-btn" type="button">News</button>
-              <button id="google-any-preset-tech" class="ghost google-any-preset-btn" type="button">Tech</button>
-              <button id="google-any-preset-utilities" class="ghost google-any-preset-btn" type="button">Utilities</button>
+            <div class="google-any-inline-row">
+              <label class="google-any-field-title" for="google-any-engine-search">Add more from the list</label>
+              <input id="google-any-engine-search" type="text" placeholder="Filter keywords">
             </div>
 
             <div id="google-any-source-list" class="google-any-source-list"></div>
 
-            <div class="google-any-selected-wrap">
-              <span class="google-any-selected-label">Selected:</span>
-              <div id="google-any-selected-list" class="google-any-selected-list"></div>
-            </div>
           </div>
+        </div>
+
+        <div class="google-any-run-wrap">
+          <button id="google-any-run-inline" class="primary google-any-run-inline-btn" type="button">Google+ Search Now</button>
+          <p class="google-any-copy">This is the same as Google+ Search on the main landing page.</p>
         </div>
       </section>
     </section>
