@@ -1,4 +1,10 @@
 import { BUILTIN_ENGINE_IDS, CATEGORY_ORDER, getAvailableEngines, sanitizeCustomEngine } from "./engines.js";
+import {
+  GOOGLE_ANY_MODE,
+  getDefaultGoogleAnySourceIds,
+  getGoogleAnySources,
+  sanitizeGoogleAnyMode
+} from "./googleAnyPlatform.js";
 
 const LEGACY_BUILTIN_ID_MAP = Object.freeze({
   gemini: "custom-exa"
@@ -94,7 +100,7 @@ const CATEGORY_COLUMN_INDEX = Object.freeze({
 });
 
 export const DEFAULT_SETTINGS = {
-  schemaVersion: 4,
+  schemaVersion: 5,
   enabledEngineIds: DEFAULT_ENABLED_ENGINE_IDS.filter((id) => DEFAULT_ENGINE_ID_SET.has(id)),
   hiddenBuiltinIds: DEFAULT_HIDDEN_BUILTIN_IDS,
   customEngines: DEFAULT_CUSTOM_ENGINES.map((engine) => ({ ...engine })),
@@ -107,6 +113,13 @@ export const DEFAULT_SETTINGS = {
   behavior: {
     openInBackground: true,
     openNextToCurrent: true
+  },
+  googleAnyPlatform: {
+    mode: GOOGLE_ANY_MODE.COMBINED,
+    selectedEngineIds: getDefaultGoogleAnySourceIds(getGoogleAnySources({
+      customEngines: DEFAULT_CUSTOM_ENGINES,
+      engineLabelOverrides: {}
+    }).sources)
   }
 };
 
@@ -356,6 +369,23 @@ function migrateEnabledIds(settings, allowedIds) {
   return dedupeEngineIds(DEFAULT_SETTINGS.enabledEngineIds, allowedIds);
 }
 
+function sanitizeGoogleAnyPlatformSettings(rawGoogleAnyPlatform, sourceEntries) {
+  const raw = rawGoogleAnyPlatform && typeof rawGoogleAnyPlatform === "object"
+    ? rawGoogleAnyPlatform
+    : {};
+  const allowedIds = sourceEntries.map((entry) => entry.engineId);
+  const allowedSet = new Set(allowedIds);
+  const selectedFromInput = dedupeIds(raw.selectedEngineIds, allowedSet);
+  const selectedEngineIds = selectedFromInput.length
+    ? selectedFromInput
+    : getDefaultGoogleAnySourceIds(sourceEntries);
+
+  return {
+    mode: sanitizeGoogleAnyMode(raw.mode),
+    selectedEngineIds
+  };
+}
+
 export function sanitizeSettings(rawSettings) {
   const settings = rawSettings || {};
   const customEngines = sanitizeCustomEngines(settings.customEngines);
@@ -384,6 +414,11 @@ export function sanitizeSettings(rawSettings) {
         ? settings.behavior.openNextToCurrent
         : DEFAULT_SETTINGS.behavior.openNextToCurrent
   };
+  const googleAnySources = getGoogleAnySources({
+    customEngines,
+    engineLabelOverrides
+  }).sources;
+  const googleAnyPlatform = sanitizeGoogleAnyPlatformSettings(settings.googleAnyPlatform, googleAnySources);
 
   return {
     schemaVersion: DEFAULT_SETTINGS.schemaVersion,
@@ -393,6 +428,7 @@ export function sanitizeSettings(rawSettings) {
     engineLabelOverrides,
     headerLabels,
     layoutColumns,
-    behavior
+    behavior,
+    googleAnyPlatform
   };
 }

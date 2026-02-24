@@ -21,6 +21,7 @@ export const BUILTIN_ENGINES = [
   { id: "arxiv", name: "arXiv", category: "Research", urlTemplate: "https://arxiv.org/search/?query=%s&searchtype=all" },
   { id: "youtube", name: "YouTube", category: "Social", urlTemplate: "https://www.youtube.com/results?search_query=%s" },
   { id: "reddit", name: "Reddit", category: "Social", urlTemplate: "https://www.reddit.com/search/?q=%s" },
+  { id: "linkedin", name: "LinkedIn", category: "Social", urlTemplate: "https://www.linkedin.com/search/results/all/?keywords=%s&origin=GLOBAL_SEARCH_HEADER" },
   { id: "quora", name: "Quora", category: "Social", urlTemplate: "https://www.quora.com/search?q=%s" },
   { id: "twitter", name: "Twitter/X", category: "Social", urlTemplate: "https://x.com/search?q=%s" },
   { id: "google-drive", name: "Google Drive", category: "Productivity", urlTemplate: "https://drive.google.com/drive/search?q=%s" },

@@ -1,7 +1,8 @@
 import { getEnginesByIds } from "../shared/engines.js";
 
 export const MENU_IDS = {
-  ROOT: "booster-root"
+  ROOT: "booster-root",
+  GOOGLE_ANY_PLATFORM: "booster-google-any-platform"
 };
 
 export function engineMenuId(engineId) {
@@ -47,13 +48,20 @@ async function rebuildContextMenusNow(settings) {
     : [];
 
   const engines = getEnginesByIds(selectedEngineIds, settings);
-  if (!engines.length) {
-    return;
-  }
 
   await createMenu({
     id: MENU_IDS.ROOT,
     title: "Search with",
+    contexts: ["selection", "link"]
+  });
+
+  const googleAnyMode = settings && settings.googleAnyPlatform && settings.googleAnyPlatform.mode === "separate"
+    ? "Separate tabs"
+    : "One tab";
+  await createMenu({
+    id: MENU_IDS.GOOGLE_ANY_PLATFORM,
+    parentId: MENU_IDS.ROOT,
+    title: `Google + Any Platform (${googleAnyMode})`,
     contexts: ["selection", "link"]
   });
 

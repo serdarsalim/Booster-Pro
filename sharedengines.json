@@ -239,6 +239,10 @@
         "url": "https://www.facebook.com/search/results.php?q=%s"
       },
       {
+        "name": "LinkedIn",
+        "url": "https://www.linkedin.com/search/results/all/?keywords=%s&origin=GLOBAL_SEARCH_HEADER"
+      },
+      {
         "name": "Reddit",
         "url": "https://www.reddit.com/search/?q=%s"
       },

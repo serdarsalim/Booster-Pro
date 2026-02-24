@@ -1,5 +1,12 @@
 import { BUILTIN_ENGINES, CATEGORY_ORDER, getAvailableEngines } from "../shared/engines.js";
 import { DEFAULT_SETTINGS } from "../shared/defaultSettings.js";
+import {
+  GOOGLE_ANY_MODE,
+  buildGoogleAnyCombinedQuery,
+  getDefaultGoogleAnySourceIds,
+  getGoogleAnySources,
+  sanitizeGoogleAnyMode
+} from "../shared/googleAnyPlatform.js";
 
 const QUERY_STORAGE_KEY = "boosterPersistedQuery";
 const LAYOUT_COLUMN_COUNT = 3;
@@ -85,6 +92,7 @@ let querySelectOnFocusArmed = true;
 let activeView = "menu";
 let editMode = false;
 let editDraft = null;
+let googleAnyFilter = "";
 
 let activeAddSectionId = null;
 let sharedCatalog = [];
@@ -361,6 +369,19 @@ function ensureSettingsShape(targetSettings) {
     targetSettings.headerLabels = {};
   }
 
+  const googleAnySources = getGoogleAnySources(targetSettings).sources;
+  const googleAnySourceIds = new Set(googleAnySources.map((entry) => entry.engineId));
+  targetSettings.googleAnyPlatform = targetSettings.googleAnyPlatform || {};
+  targetSettings.googleAnyPlatform.mode = sanitizeGoogleAnyMode(targetSettings.googleAnyPlatform.mode);
+  const selected = Array.isArray(targetSettings.googleAnyPlatform.selectedEngineIds)
+    ? targetSettings.googleAnyPlatform.selectedEngineIds.filter((engineId) => (
+      typeof engineId === "string" && googleAnySourceIds.has(engineId)
+    ))
+    : [];
+  targetSettings.googleAnyPlatform.selectedEngineIds = selected.length
+    ? Array.from(new Set(selected))
+    : getDefaultGoogleAnySourceIds(googleAnySources);
+
   ensureLayoutColumns(targetSettings);
 }
 
@@ -375,28 +396,41 @@ function getEngineMap(targetSettings) {
 function updateTopActionButtons() {
   const startEditButton = document.getElementById("start-edit");
   const settingsButton = document.getElementById("open-settings");
+  const googleAnyButton = document.getElementById("open-google-any");
 
   if (!(startEditButton instanceof HTMLButtonElement)
-    || !(settingsButton instanceof HTMLButtonElement)) {
+    || !(settingsButton instanceof HTMLButtonElement)
+    || !(googleAnyButton instanceof HTMLButtonElement)) {
     return;
   }
 
-  startEditButton.hidden = false;
+  startEditButton.hidden = activeView !== "menu";
   settingsButton.hidden = false;
+  googleAnyButton.hidden = false;
   startEditButton.setAttribute("aria-pressed", editMode ? "true" : "false");
   startEditButton.title = editMode ? "Editing (click to exit)" : "Edit";
+  settingsButton.setAttribute("aria-pressed", activeView === "settings" ? "true" : "false");
+  googleAnyButton.setAttribute("aria-pressed", activeView === "google-any" ? "true" : "false");
 }
 
 function setActiveView(viewId) {
   const menuView = document.getElementById("menu-view");
   const settingsView = document.getElementById("settings-view");
-  if (!(menuView instanceof HTMLElement) || !(settingsView instanceof HTMLElement)) {
+  const googleAnyView = document.getElementById("google-any-view");
+  if (!(menuView instanceof HTMLElement)
+    || !(settingsView instanceof HTMLElement)
+    || !(googleAnyView instanceof HTMLElement)) {
     return;
   }
-  activeView = viewId === "settings" ? "settings" : "menu";
-  const showSettings = viewId === "settings";
-  menuView.hidden = showSettings;
-  settingsView.hidden = !showSettings;
+  activeView = viewId === "settings"
+    ? "settings"
+    : (viewId === "google-any" ? "google-any" : "menu");
+  menuView.hidden = activeView !== "menu";
+  settingsView.hidden = activeView !== "settings";
+  googleAnyView.hidden = activeView !== "google-any";
+  if (activeView === "google-any") {
+    renderGoogleAnyView();
+  }
   updateTopActionButtons();
 }
 
@@ -417,6 +451,167 @@ function renderSettingsForm() {
   if (openNextInput instanceof HTMLInputElement) {
     openNextInput.checked = Boolean(settings.behavior.openNextToCurrent);
   }
+}
+
+function readGoogleAnyQuery() {
+  const googleAnyQueryInput = document.getElementById("google-any-query-input");
+  if (googleAnyQueryInput instanceof HTMLInputElement) {
+    return googleAnyQueryInput.value.trim();
+  }
+  const queryInput = document.getElementById("query-input");
+  if (queryInput instanceof HTMLInputElement) {
+    return queryInput.value.trim();
+  }
+  return "";
+}
+
+function syncGoogleAnyQueryToMain(nextQuery) {
+  const queryInput = document.getElementById("query-input");
+  if (queryInput instanceof HTMLInputElement) {
+    queryInput.value = nextQuery;
+    updateQueryControls();
+    persistCurrentQuery().catch(() => undefined);
+  }
+}
+
+function getGoogleAnyPresetEngineIds(presetId, sources) {
+  const list = Array.isArray(sources) ? sources : [];
+  if (!list.length) {
+    return [];
+  }
+
+  if (presetId === "balanced") {
+    return getDefaultGoogleAnySourceIds(list);
+  }
+
+  const categoriesByPreset = {
+    social: new Set(["Social"]),
+    dev: new Set(["Tech"]),
+    research: new Set(["Research", "News"]),
+    shopping: new Set(["Shopping"])
+  };
+  const categorySet = categoriesByPreset[presetId];
+  if (!categorySet) {
+    return [];
+  }
+
+  const ids = list
+    .filter((entry) => categorySet.has(entry.category))
+    .map((entry) => entry.engineId);
+  return ids.length ? ids : getDefaultGoogleAnySourceIds(list);
+}
+
+function renderGoogleAnyPreview(currentSettings, selectedEntries) {
+  const previewInput = document.getElementById("google-any-preview");
+  const previewMeta = document.getElementById("google-any-preview-meta");
+  if (!(previewInput instanceof HTMLInputElement) || !(previewMeta instanceof HTMLElement)) {
+    return;
+  }
+
+  const mode = currentSettings.googleAnyPlatform.mode;
+  const query = readGoogleAnyQuery() || "<selected text>";
+  const scopes = selectedEntries.map((entry) => entry.scope);
+  const selectedCount = selectedEntries.length;
+
+  if (!selectedCount) {
+    previewInput.value = "";
+    previewMeta.textContent = "No platforms selected.";
+    return;
+  }
+
+  if (mode === GOOGLE_ANY_MODE.SEPARATE) {
+    previewInput.value = `${query} site:${scopes[0]}${scopes.length > 1 ? " ..." : ""}`;
+    previewMeta.textContent = `Included platforms: ${selectedCount}. This will open ${selectedCount} tabs.`;
+    return;
+  }
+
+  previewInput.value = buildGoogleAnyCombinedQuery(query, scopes);
+  previewMeta.textContent = `Included platforms: ${selectedCount}. This will open 1 tab.`;
+}
+
+function renderGoogleAnyView() {
+  const currentSettings = getWorkingSettings();
+  if (!currentSettings) {
+    return;
+  }
+  ensureSettingsShape(currentSettings);
+
+  const queryInput = document.getElementById("query-input");
+  const googleAnyQueryInput = document.getElementById("google-any-query-input");
+  if (googleAnyQueryInput instanceof HTMLInputElement && queryInput instanceof HTMLInputElement) {
+    googleAnyQueryInput.value = queryInput.value;
+  }
+
+  const { sources, unmapped } = getGoogleAnySources(currentSettings);
+  const sourceById = new Map(sources.map((entry) => [entry.engineId, entry]));
+  const selectedIds = currentSettings.googleAnyPlatform.selectedEngineIds;
+  const selectedEntries = selectedIds
+    .map((engineId) => sourceById.get(engineId))
+    .filter((entry) => Boolean(entry));
+
+  const modeCombined = document.querySelector("input[name=\"google-any-mode\"][value=\"combined\"]");
+  const modeSeparate = document.querySelector("input[name=\"google-any-mode\"][value=\"separate\"]");
+  if (modeCombined instanceof HTMLInputElement) {
+    modeCombined.checked = currentSettings.googleAnyPlatform.mode === GOOGLE_ANY_MODE.COMBINED;
+  }
+  if (modeSeparate instanceof HTMLInputElement) {
+    modeSeparate.checked = currentSettings.googleAnyPlatform.mode === GOOGLE_ANY_MODE.SEPARATE;
+  }
+
+  const filterInput = document.getElementById("google-any-filter-input");
+  if (filterInput instanceof HTMLInputElement) {
+    filterInput.value = googleAnyFilter;
+  }
+
+  const filteredSources = getFilteredGoogleAnySources(currentSettings);
+
+  const sourceList = document.getElementById("google-any-source-list");
+  if (sourceList instanceof HTMLElement) {
+    if (!filteredSources.length) {
+      sourceList.innerHTML = "<div class=\"google-any-empty\">No platforms match this filter.</div>";
+    } else {
+      sourceList.innerHTML = filteredSources
+        .map((entry) => {
+          const checked = selectedIds.includes(entry.engineId) ? "checked" : "";
+          return `
+            <label class="google-any-source-row">
+              <input type="checkbox" data-google-any-source-id="${escapeHtml(entry.engineId)}" ${checked}>
+              <span class="google-any-source-main">
+                <span class="google-any-source-name">${escapeHtml(entry.name)}</span>
+                <span class="google-any-source-category">${escapeHtml(entry.category)}</span>
+              </span>
+              <span class="google-any-source-scope">site:${escapeHtml(entry.scope)}</span>
+            </label>
+          `;
+        })
+        .join("");
+    }
+  }
+
+  const unmappedList = document.getElementById("google-any-unmapped-list");
+  if (unmappedList instanceof HTMLElement) {
+    if (!unmapped.length) {
+      unmappedList.textContent = "All current engines can be mapped to a Google site scope.";
+    } else {
+      unmappedList.innerHTML = unmapped
+        .slice(0, 16)
+        .map((entry) => `${escapeHtml(entry.name)} (${escapeHtml(entry.category)})`)
+        .join("<br>");
+    }
+  }
+
+  renderGoogleAnyPreview(currentSettings, selectedEntries);
+}
+
+function getFilteredGoogleAnySources(currentSettings) {
+  const { sources } = getGoogleAnySources(currentSettings);
+  const normalizedFilter = googleAnyFilter.trim().toLowerCase();
+  if (!normalizedFilter) {
+    return sources;
+  }
+  return sources.filter((entry) => (
+    `${entry.category} ${entry.name} ${entry.scope}`.toLowerCase().includes(normalizedFilter)
+  ));
 }
 
 function isCustomId(engineId) {
@@ -548,6 +743,21 @@ function runEngineSearch(engineId) {
   }
 
   sendMessage("RUN_SEARCH", { query, engineId }).catch(() => undefined);
+}
+
+function runGoogleAnySearch() {
+  const query = readGoogleAnyQuery();
+  if (!query) {
+    const googleAnyQueryInput = document.getElementById("google-any-query-input");
+    if (googleAnyQueryInput instanceof HTMLInputElement) {
+      googleAnyQueryInput.focus();
+    }
+    showToast("Enter a query first.");
+    return;
+  }
+
+  syncGoogleAnyQueryToMain(query);
+  sendMessage("RUN_GOOGLE_ANY", { query }).catch(() => undefined);
 }
 
 function removeEngineFromAllSections(targetSettings, engineId) {
@@ -839,6 +1049,9 @@ function render() {
 
   ensureSettingsShape(workingSettings);
   renderColumns(workingSettings);
+  if (activeView === "google-any") {
+    renderGoogleAnyView();
+  }
 
   document.body.classList.toggle("is-edit-mode", editMode);
   updateTopActionButtons();
@@ -1249,6 +1462,9 @@ function bindEvents() {
     queryInput.addEventListener("input", () => {
       updateQueryControls();
       persistCurrentQuery().catch(() => undefined);
+      if (activeView === "google-any") {
+        renderGoogleAnyView();
+      }
     });
   }
 
@@ -1297,6 +1513,18 @@ function bindEvents() {
 
     if (target.id === "manual-engine-name" || target.id === "manual-engine-url") {
       updateManualAddButtonVisibility();
+      return;
+    }
+
+    if (target.id === "google-any-filter-input" && target instanceof HTMLInputElement) {
+      googleAnyFilter = target.value;
+      renderGoogleAnyView();
+      return;
+    }
+
+    if (target.id === "google-any-query-input" && target instanceof HTMLInputElement) {
+      syncGoogleAnyQueryToMain(target.value);
+      renderGoogleAnyView();
       return;
     }
 
@@ -1349,10 +1577,35 @@ function bindEvents() {
         });
       return;
     }
-    if (target.name !== "enabled-engine") {
+
+    if (!settings) {
       return;
     }
-    if (!settings || editMode) {
+
+    if (target.name === "google-any-mode") {
+      ensureSettingsShape(settings);
+      settings.googleAnyPlatform.mode = sanitizeGoogleAnyMode(target.value);
+      queueAutosave();
+      renderGoogleAnyView();
+      return;
+    }
+
+    const googleAnySourceId = target.getAttribute("data-google-any-source-id");
+    if (googleAnySourceId) {
+      ensureSettingsShape(settings);
+      const selected = new Set(settings.googleAnyPlatform.selectedEngineIds || []);
+      if (target.checked) {
+        selected.add(googleAnySourceId);
+      } else {
+        selected.delete(googleAnySourceId);
+      }
+      settings.googleAnyPlatform.selectedEngineIds = Array.from(selected);
+      queueAutosave();
+      renderGoogleAnyView();
+      return;
+    }
+
+    if (target.name !== "enabled-engine" || editMode) {
       return;
     }
 
@@ -1448,6 +1701,18 @@ function bindEvents() {
       return;
     }
 
+    if (button.id === "open-google-any") {
+      if (editMode) {
+        exitEditMode();
+      }
+      if (activeView === "google-any") {
+        setActiveView("menu");
+        return;
+      }
+      setActiveView("google-any");
+      return;
+    }
+
     if (button.id === "go-home-title") {
       setActiveView("menu");
       return;
@@ -1497,6 +1762,78 @@ function bindEvents() {
       return;
     }
 
+    if (button.id === "google-any-select-all-visible") {
+      if (!settings) {
+        return;
+      }
+      ensureSettingsShape(settings);
+      const selected = new Set(settings.googleAnyPlatform.selectedEngineIds || []);
+      getFilteredGoogleAnySources(settings).forEach((entry) => selected.add(entry.engineId));
+      settings.googleAnyPlatform.selectedEngineIds = Array.from(selected);
+      queueAutosave();
+      renderGoogleAnyView();
+      return;
+    }
+
+    if (button.id === "google-any-clear-all-visible") {
+      if (!settings) {
+        return;
+      }
+      ensureSettingsShape(settings);
+      const visibleIds = new Set(getFilteredGoogleAnySources(settings).map((entry) => entry.engineId));
+      const next = (settings.googleAnyPlatform.selectedEngineIds || []).filter((engineId) => !visibleIds.has(engineId));
+      settings.googleAnyPlatform.selectedEngineIds = next;
+      queueAutosave();
+      renderGoogleAnyView();
+      return;
+    }
+
+    if (button.id === "google-any-preset-balanced"
+      || button.id === "google-any-preset-social"
+      || button.id === "google-any-preset-dev"
+      || button.id === "google-any-preset-research"
+      || button.id === "google-any-preset-shopping") {
+      if (!settings) {
+        return;
+      }
+      ensureSettingsShape(settings);
+      const { sources } = getGoogleAnySources(settings);
+      const presetId = button.id.replace("google-any-preset-", "");
+      settings.googleAnyPlatform.selectedEngineIds = getGoogleAnyPresetEngineIds(presetId, sources);
+      queueAutosave();
+      renderGoogleAnyView();
+      return;
+    }
+
+    if (button.id === "google-any-reset-defaults") {
+      if (!settings) {
+        return;
+      }
+      ensureSettingsShape(settings);
+      const { sources } = getGoogleAnySources(settings);
+      settings.googleAnyPlatform = {
+        mode: GOOGLE_ANY_MODE.COMBINED,
+        selectedEngineIds: getDefaultGoogleAnySourceIds(sources)
+      };
+      googleAnyFilter = "";
+      queueAutosave();
+      renderGoogleAnyView();
+      showToast("Google + Any Platform reset.");
+      return;
+    }
+
+    if (button.id === "google-any-save") {
+      flushAutosave()
+        .then(() => showToast("Google + Any Platform saved."))
+        .catch(() => showToast("Save failed."));
+      return;
+    }
+
+    if (button.id === "google-any-run-now") {
+      runGoogleAnySearch();
+      return;
+    }
+
     const addCategoryColumn = button.getAttribute("data-add-category-column");
     if (addCategoryColumn !== null) {
       if (!editMode || !editDraft) {
@@ -1526,6 +1863,15 @@ function bindEvents() {
   });
 
   document.addEventListener("keydown", (event) => {
+    const target = event.target;
+    if (event.key === "Enter"
+      && target instanceof HTMLInputElement
+      && target.id === "google-any-query-input") {
+      event.preventDefault();
+      runGoogleAnySearch();
+      return;
+    }
+
     if (event.key === "Escape") {
       const modal = document.getElementById("add-more-modal");
       if (modal instanceof HTMLElement && !modal.hidden) {

@@ -1,9 +1,17 @@
 import { buildEngineUrl } from "../shared/engines.js";
+import { buildGoogleAnyUrls } from "../shared/googleAnyPlatform.js";
 
 export function buildSearchUrls(query, engineIds, settings) {
   return engineIds
     .map((engineId) => ({ engineId, url: buildEngineUrl(engineId, query, settings) }))
     .filter((entry) => Boolean(entry.url));
+}
+
+export function buildGoogleAnySearchUrls(query, settings) {
+  return buildGoogleAnyUrls(query, settings).map((url, index) => ({
+    engineId: `google-any-${index + 1}`,
+    url
+  }));
 }
 
 export async function openUrls(entries, settings) {

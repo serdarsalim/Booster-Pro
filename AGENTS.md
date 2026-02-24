@@ -1,15 +1,20 @@
 # AGENTS.md
 
 ## Collaboration Contract (This Repo)
-- Current mode is **Ideation / Product Management Planning**.
-- The assistant should focus on:
+- Default mode is **Execution**.
+- In default mode:
+  - Execute clear implementation/code commands directly.
+  - Ask clarifying questions only when necessary before implementing.
+  - Include relevant context/tradeoffs when useful, but do not block execution on a `go` confirmation.
+- Ideation mode is **opt-in** and starts only when the user explicitly says `ideate`.
+- In ideation mode, the assistant should focus on:
   - product strategy
   - requirements definition
   - UX flows
   - technical architecture options
   - roadmap and prioritization
-- **Do not execute implementation changes unless the user explicitly says `go`.**
-- If implementation is requested indirectly, pause and ask for explicit `go` confirmation.
+- In ideation mode, **do not execute implementation changes unless the user explicitly says `go`**.
+- Once ideation is complete, return to default execution behavior unless the user says `ideate` again.
 
 ## Product Direction
 Build a modern Chrome extension with strong right-click and left-click context interactions for selected content, enabling quick search across contemporary engines, including AI-first tools (for example Perplexity).
