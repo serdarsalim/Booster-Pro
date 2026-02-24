@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Searcher X",
   "description": "Chrome extension to search text in multiple search engines instantly.",
-  "version": "2026.2.23",
+  "version": "2026.2.24",
   "permissions": [
     "contextMenus",
     "storage"
