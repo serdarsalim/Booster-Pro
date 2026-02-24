@@ -91,7 +91,7 @@ let querySelectOnFocusArmed = true;
 let activeView = "menu";
 let editMode = false;
 let editDraft = null;
-let googleAnyFilter = "";
+let googleAnySearchTerm = "";
 
 let activeAddSectionId = null;
 let sharedCatalog = [];
@@ -103,6 +103,8 @@ const dragState = {
   engineId: null,
   sourceSectionId: null
 };
+
+const GOOGLE_ANY_PRESET_CATEGORIES = Object.freeze(["Social", "News", "Tech", "Utilities"]);
 
 function sendMessage(type, payload = {}) {
   return new Promise((resolve, reject) => {
@@ -376,18 +378,23 @@ function ensureSettingsShape(targetSettings) {
     targetSettings.headerLabels = {};
   }
 
-  const googleAnySources = getGoogleAnySources(targetSettings).sources;
+  const googleAnySources = getGoogleAnySources(targetSettings).sources
+    .filter((entry) => GOOGLE_ANY_PRESET_CATEGORIES.includes(entry.category));
   const googleAnySourceIds = new Set(googleAnySources.map((entry) => entry.engineId));
   targetSettings.googleAnyPlatform = targetSettings.googleAnyPlatform || {};
   targetSettings.googleAnyPlatform.mode = sanitizeGoogleAnyMode(targetSettings.googleAnyPlatform.mode);
-  const selected = Array.isArray(targetSettings.googleAnyPlatform.selectedEngineIds)
+  const hasStoredSelection = Array.isArray(targetSettings.googleAnyPlatform.selectedEngineIds);
+  const selected = hasStoredSelection
     ? targetSettings.googleAnyPlatform.selectedEngineIds.filter((engineId) => (
       typeof engineId === "string" && googleAnySourceIds.has(engineId)
     ))
     : [];
-  targetSettings.googleAnyPlatform.selectedEngineIds = selected.length
+  const socialDefaults = googleAnySources
+    .filter((entry) => entry.category === "Social")
+    .map((entry) => entry.engineId);
+  targetSettings.googleAnyPlatform.selectedEngineIds = hasStoredSelection
     ? Array.from(new Set(selected))
-    : getDefaultGoogleAnySourceIds(googleAnySources);
+    : (socialDefaults.length ? socialDefaults : getDefaultGoogleAnySourceIds(googleAnySources));
 
   ensureLayoutColumns(targetSettings);
 }
@@ -487,16 +494,61 @@ function readMainQuery() {
   return "";
 }
 
+function getGoogleAnyVisibleSources(currentSettings) {
+  return getGoogleAnySources(currentSettings).sources
+    .filter((entry) => GOOGLE_ANY_PRESET_CATEGORIES.includes(entry.category));
+}
+
+function setGoogleAnyPreset(targetSettings, category) {
+  if (!targetSettings || !GOOGLE_ANY_PRESET_CATEGORIES.includes(category)) {
+    return;
+  }
+  const sources = getGoogleAnyVisibleSources(targetSettings);
+  const selectedSet = new Set(
+    Array.isArray(targetSettings.googleAnyPlatform.selectedEngineIds)
+      ? targetSettings.googleAnyPlatform.selectedEngineIds
+      : []
+  );
+  sources
+    .filter((entry) => entry.category === category)
+    .forEach((entry) => selectedSet.add(entry.engineId));
+  targetSettings.googleAnyPlatform.selectedEngineIds = Array.from(selectedSet);
+}
+
+function renderGoogleAnyModeHelp(mode, selectedCount) {
+  const help = document.getElementById("google-any-mode-help");
+  if (!(help instanceof HTMLElement)) {
+    return;
+  }
+
+  if (selectedCount <= 0) {
+    help.textContent = "Select at least one platform to run Google+ Search.";
+    return;
+  }
+
+  if (mode === GOOGLE_ANY_MODE.SEPARATE) {
+    help.textContent = `Multi tab: opens ${selectedCount} Google tabs, one per selected platform.`;
+    return;
+  }
+
+  help.textContent = "One tab: opens 1 Google tab with all selected platforms combined.";
+}
+
 function renderGoogleAnyView() {
   const currentSettings = getWorkingSettings();
   if (!currentSettings) {
     return;
   }
   ensureSettingsShape(currentSettings);
+  const sourceList = document.getElementById("google-any-source-list");
+  const sourceListScrollTop = sourceList instanceof HTMLElement ? sourceList.scrollTop : 0;
 
-  const { sources } = getGoogleAnySources(currentSettings);
-  const sourceById = new Map(sources.map((entry) => [entry.engineId, entry]));
+  const sources = getGoogleAnyVisibleSources(currentSettings);
   const selectedIds = currentSettings.googleAnyPlatform.selectedEngineIds;
+  const selectedCount = sources.filter((entry) => selectedIds.includes(entry.engineId)).length;
+  const selectedEntries = sources
+    .filter((entry) => selectedIds.includes(entry.engineId))
+    .sort((a, b) => a.name.localeCompare(b.name));
 
   const modeCombined = document.querySelector("input[name=\"google-any-mode\"][value=\"combined\"]");
   const modeSeparate = document.querySelector("input[name=\"google-any-mode\"][value=\"separate\"]");
@@ -506,47 +558,60 @@ function renderGoogleAnyView() {
   if (modeSeparate instanceof HTMLInputElement) {
     modeSeparate.checked = currentSettings.googleAnyPlatform.mode === GOOGLE_ANY_MODE.SEPARATE;
   }
+  renderGoogleAnyModeHelp(currentSettings.googleAnyPlatform.mode, selectedCount);
 
-  const filterInput = document.getElementById("google-any-filter-input");
-  if (filterInput instanceof HTMLInputElement) {
-    filterInput.value = googleAnyFilter;
+  const searchInput = document.getElementById("google-any-engine-search");
+  if (searchInput instanceof HTMLInputElement) {
+    searchInput.value = googleAnySearchTerm;
   }
+  const normalizedSearch = googleAnySearchTerm.trim().toLowerCase();
+  const filteredSources = normalizedSearch
+    ? sources.filter((entry) => `${entry.name} ${entry.category}`.toLowerCase().includes(normalizedSearch))
+    : sources;
 
-  const filteredSources = getFilteredGoogleAnySources(currentSettings);
-
-  const sourceList = document.getElementById("google-any-source-list");
-  if (sourceList instanceof HTMLElement) {
-    if (!filteredSources.length) {
-      sourceList.innerHTML = "<div class=\"google-any-empty\">No platforms match this filter.</div>";
+  const selectedList = document.getElementById("google-any-selected-list");
+  if (selectedList instanceof HTMLElement) {
+    if (!selectedEntries.length) {
+      selectedList.innerHTML = "<span class=\"google-any-selected-empty\">No platforms selected.</span>";
     } else {
-      sourceList.innerHTML = filteredSources
-        .map((entry) => {
-          const checked = selectedIds.includes(entry.engineId) ? "checked" : "";
-          return `
-            <label class="google-any-source-row">
-              <input type="checkbox" data-google-any-source-id="${escapeHtml(entry.engineId)}" ${checked}>
-              <span class="google-any-source-main">
-                <span class="google-any-source-name">${escapeHtml(entry.name)}</span>
-                <span class="google-any-source-category">${escapeHtml(entry.category)}</span>
-              </span>
-              <span class="google-any-source-scope">site:${escapeHtml(entry.scope)}</span>
-            </label>
-          `;
-        })
+      selectedList.innerHTML = selectedEntries
+        .map((entry) => (
+          `<span class="google-any-selected-pill">
+            <span>${escapeHtml(entry.name)}</span>
+            <button type="button" data-google-any-remove-id="${escapeHtml(entry.engineId)}" aria-label="Remove ${escapeHtml(entry.name)}">&times;</button>
+          </span>`
+        ))
         .join("");
     }
   }
-}
 
-function getFilteredGoogleAnySources(currentSettings) {
-  const { sources } = getGoogleAnySources(currentSettings);
-  const normalizedFilter = googleAnyFilter.trim().toLowerCase();
-  if (!normalizedFilter) {
-    return sources;
+  if (sourceList instanceof HTMLElement) {
+    sourceList.innerHTML = filteredSources.length
+      ? filteredSources.map((entry) => {
+        const checked = selectedIds.includes(entry.engineId) ? "checked" : "";
+        return `
+          <label class="google-any-source-row">
+            <input type="checkbox" data-google-any-source-id="${escapeHtml(entry.engineId)}" ${checked}>
+            <span class="google-any-source-name">${escapeHtml(entry.name)}</span>
+            <span class="google-any-source-category-tag">${escapeHtml(entry.category)}</span>
+          </label>
+        `;
+      }).join("")
+      : "<div class=\"google-any-empty\">No engines match your search.</div>";
+    sourceList.scrollTop = sourceListScrollTop;
   }
-  return sources.filter((entry) => (
-    `${entry.category} ${entry.name} ${entry.scope}`.toLowerCase().includes(normalizedFilter)
-  ));
+
+  GOOGLE_ANY_PRESET_CATEGORIES.forEach((category) => {
+    const button = document.getElementById(`google-any-preset-${category.toLowerCase()}`);
+    if (button instanceof HTMLButtonElement) {
+      const categoryIds = sources
+        .filter((entry) => entry.category === category)
+        .map((entry) => entry.engineId);
+      const active = categoryIds.length > 0 && categoryIds.every((engineId) => selectedIds.includes(engineId));
+      button.classList.toggle("is-active", active);
+      button.setAttribute("aria-pressed", active ? "true" : "false");
+    }
+  });
 }
 
 function isCustomId(engineId) {
@@ -980,6 +1045,8 @@ function render() {
   if (!workingSettings) {
     return;
   }
+  const activePanel = document.querySelector(".page-view:not([hidden]) .engine-panel");
+  const panelScrollTop = activePanel instanceof HTMLElement ? activePanel.scrollTop : 0;
 
   ensureSettingsShape(workingSettings);
   renderColumns(workingSettings);
@@ -991,6 +1058,9 @@ function render() {
   document.body.classList.toggle("is-edit-mode", editMode);
   updateTopActionButtons();
   syncViewHeight();
+  if (activePanel instanceof HTMLElement) {
+    activePanel.scrollTop = panelScrollTop;
+  }
 }
 
 function resetDefaults() {
@@ -1076,61 +1146,53 @@ async function loadSharedCatalog() {
   sharedCatalog = [];
   sharedCatalogByKey = new Map();
 
-  try {
-    const response = await fetch(chrome.runtime.getURL("sharedengines.json"));
-    const raw = await response.json();
-    const dedupe = new Set();
+  const dedupe = new Set();
+  BUILTIN_ENGINES.forEach((engine) => {
+    if (!engine || typeof engine !== "object") {
+      return;
+    }
+    const site = {
+      name: engine.name,
+      url: engine.urlTemplate
+    };
+    if (!isCompatibleSharedEntry(site)) {
+      return;
+    }
 
-    (Array.isArray(raw) ? raw : []).forEach((group) => {
-      const type = typeof group.type === "string" ? group.type : "Other";
-      const sites = Array.isArray(group.sites) ? group.sites : [];
-      sites.forEach((site) => {
-        if (!isCompatibleSharedEntry(site)) {
-          return;
-        }
+    const name = site.name.trim();
+    const urlTemplate = site.url.trim();
+    const dedupeKey = `${name}|${urlTemplate}`;
+    if (dedupe.has(dedupeKey)) {
+      return;
+    }
+    dedupe.add(dedupeKey);
 
-        const name = site.name.trim();
-        const urlTemplate = site.url.trim();
-        const dedupeKey = `${name}|${urlTemplate}`;
-        if (dedupe.has(dedupeKey)) {
-          return;
-        }
-        dedupe.add(dedupeKey);
+    const type = engine.category;
+    const displayCategory = type === "Social" ? "Social Media" : type;
+    const key = `shared-${slugify(type)}-${slugify(name)}-${sharedCatalog.length + 1}`;
+    const entry = {
+      key,
+      type,
+      category: type,
+      displayCategory,
+      name,
+      urlTemplate,
+      label: `${displayCategory} | ${name}`,
+      searchText: `${displayCategory} ${name} ${type}`.toLowerCase()
+    };
 
-        const key = `shared-${slugify(type)}-${slugify(name)}-${sharedCatalog.length + 1}`;
-        const displayCategory = mapSharedTypeToDisplayCategory(type);
-        const entry = {
-          key,
-          type,
-          category: mapSharedTypeToStorageCategory(type),
-          displayCategory,
-          name,
-          urlTemplate,
-          label: `${displayCategory} | ${name}`,
-          searchText: `${displayCategory} ${name} ${type}`.toLowerCase()
-        };
+    sharedCatalog.push(entry);
+    sharedCatalogByKey.set(key, entry);
+  });
 
-        sharedCatalog.push(entry);
-        sharedCatalogByKey.set(key, entry);
-      });
-    });
-
-    sharedCatalog.sort((a, b) => {
-      const categoryDelta = getSharedDisplayCategorySortIndex(a.displayCategory)
-        - getSharedDisplayCategorySortIndex(b.displayCategory);
-      if (categoryDelta !== 0) {
-        return categoryDelta;
-      }
-      const nameDelta = a.name.localeCompare(b.name);
-      if (nameDelta !== 0) {
-        return nameDelta;
-      }
-      return a.type.localeCompare(b.type);
-    });
-  } catch (_error) {
-    sharedCatalog = [];
-    sharedCatalogByKey = new Map();
-  }
+  sharedCatalog.sort((a, b) => {
+    const categoryDelta = getSharedDisplayCategorySortIndex(a.displayCategory)
+      - getSharedDisplayCategorySortIndex(b.displayCategory);
+    if (categoryDelta !== 0) {
+      return categoryDelta;
+    }
+    return a.name.localeCompare(b.name);
+  });
 }
 
 function refreshSharedSelect() {
@@ -1451,8 +1513,8 @@ function bindEvents() {
       return;
     }
 
-    if (target.id === "google-any-filter-input" && target instanceof HTMLInputElement) {
-      googleAnyFilter = target.value;
+    if (target.id === "google-any-engine-search" && target instanceof HTMLInputElement) {
+      googleAnySearchTerm = target.value;
       renderGoogleAnyView();
       return;
     }
@@ -1551,6 +1613,19 @@ function bindEvents() {
   document.addEventListener("click", (event) => {
     const target = event.target;
     if (!(target instanceof HTMLElement)) {
+      return;
+    }
+
+    const googleAnyRemoveId = target.getAttribute("data-google-any-remove-id");
+    if (googleAnyRemoveId) {
+      if (!settings) {
+        return;
+      }
+      ensureSettingsShape(settings);
+      settings.googleAnyPlatform.selectedEngineIds = (settings.googleAnyPlatform.selectedEngineIds || [])
+        .filter((engineId) => engineId !== googleAnyRemoveId);
+      queueAutosave();
+      renderGoogleAnyView();
       return;
     }
 
@@ -1708,32 +1783,47 @@ function bindEvents() {
       return;
     }
 
-    if (button.id === "google-any-reset-defaults") {
+    if (button.id === "google-any-preset-social") {
       if (!settings) {
         return;
       }
       ensureSettingsShape(settings);
-      const { sources } = getGoogleAnySources(settings);
-      settings.googleAnyPlatform = {
-        mode: GOOGLE_ANY_MODE.COMBINED,
-        selectedEngineIds: getDefaultGoogleAnySourceIds(sources)
-      };
-      googleAnyFilter = "";
+      setGoogleAnyPreset(settings, "Social");
       queueAutosave();
       renderGoogleAnyView();
-      showToast("Google + Any Platform reset.");
       return;
     }
 
-    if (button.id === "google-any-save") {
-      flushAutosave()
-        .then(() => showToast("Google + Any Platform saved."))
-        .catch(() => showToast("Save failed."));
+    if (button.id === "google-any-preset-news") {
+      if (!settings) {
+        return;
+      }
+      ensureSettingsShape(settings);
+      setGoogleAnyPreset(settings, "News");
+      queueAutosave();
+      renderGoogleAnyView();
       return;
     }
 
-    if (button.id === "google-any-run-now") {
-      runGoogleAnySearch();
+    if (button.id === "google-any-preset-tech") {
+      if (!settings) {
+        return;
+      }
+      ensureSettingsShape(settings);
+      setGoogleAnyPreset(settings, "Tech");
+      queueAutosave();
+      renderGoogleAnyView();
+      return;
+    }
+
+    if (button.id === "google-any-preset-utilities") {
+      if (!settings) {
+        return;
+      }
+      ensureSettingsShape(settings);
+      setGoogleAnyPreset(settings, "Utilities");
+      queueAutosave();
+      renderGoogleAnyView();
       return;
     }
 
