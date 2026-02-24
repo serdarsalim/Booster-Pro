@@ -254,6 +254,10 @@ button {
 
 .query-row {
   position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
 }
 
 .query-row input {
@@ -283,6 +287,12 @@ button {
 
 .query-clear:hover {
   background: #eaf0fa;
+}
+
+.query-quick-btn {
+  white-space: nowrap;
+  height: 36px;
+  padding-inline: 12px;
 }
 
 .engine-columns {
@@ -1161,6 +1171,10 @@ body.theme-dark .engine-panel::-webkit-scrollbar-thumb {
   }
 
   .manual-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .query-row {
     grid-template-columns: minmax(0, 1fr);
   }
 

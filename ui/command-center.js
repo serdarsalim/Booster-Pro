@@ -152,10 +152,15 @@ function writePersistedQuery(query) {
 function updateQueryControls() {
   const queryInput = document.getElementById("query-input");
   const clearButton = document.getElementById("clear-query");
+  const googleAnyQuickButton = document.getElementById("google-any-search-quick");
   if (!(queryInput instanceof HTMLInputElement) || !(clearButton instanceof HTMLButtonElement)) {
     return;
   }
+  const hasQuery = queryInput.value.trim().length > 0;
   clearButton.hidden = queryInput.value.length === 0;
+  if (googleAnyQuickButton instanceof HTMLButtonElement) {
+    googleAnyQuickButton.disabled = !hasQuery;
+  }
 }
 
 function persistCurrentQuery() {
@@ -1622,6 +1627,11 @@ function bindEvents() {
       }
       renderSettingsForm();
       setActiveView("settings");
+      return;
+    }
+
+    if (button.id === "google-any-search-quick") {
+      runGoogleAnySearch();
       return;
     }
 
