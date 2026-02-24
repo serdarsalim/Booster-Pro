@@ -721,7 +721,7 @@ button {
 .google-any-copy {
   margin: 0;
   color: #5a6a83;
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .google-any-block {
@@ -746,6 +746,13 @@ button {
   display: grid;
   gap: 8px;
   min-width: 0;
+}
+
+.google-any-field-title {
+  margin: 0;
+  color: #445676;
+  font-size: 13px;
+  font-weight: 700;
 }
 
 .google-any-mode-block {
@@ -829,7 +836,7 @@ button {
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #fff;
-  max-height: 220px;
+  max-height: 210px;
   overflow: auto;
 }
 
@@ -926,9 +933,10 @@ button {
 
 .google-any-presets-row {
   display: flex;
-  justify-content: center;
+  justify-content: flex-start;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .google-any-preset-btn {
@@ -1159,6 +1167,7 @@ body.theme-dark .category-title,
 body.theme-dark .category-inline-title,
 body.theme-dark .google-any-block h3,
 body.theme-dark .google-any-mode-label,
+body.theme-dark .google-any-field-title,
 body.theme-dark .shared-engine-table thead th,
 body.theme-dark .modal-section h3 {
   color: #b9c9e4;

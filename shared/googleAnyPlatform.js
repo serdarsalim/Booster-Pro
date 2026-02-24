@@ -103,7 +103,22 @@ function resolveScope(engine) {
 }
 
 export function sanitizeGoogleAnyMode(rawMode) {
-  return rawMode === GOOGLE_ANY_MODE.SEPARATE ? GOOGLE_ANY_MODE.SEPARATE : GOOGLE_ANY_MODE.COMBINED;
+  return rawMode === GOOGLE_ANY_MODE.COMBINED ? GOOGLE_ANY_MODE.COMBINED : GOOGLE_ANY_MODE.SEPARATE;
+}
+
+export function normalizeGoogleAnyKeywords(rawKeywords) {
+  if (Array.isArray(rawKeywords)) {
+    return Array.from(new Set(rawKeywords
+      .map((value) => String(value || "").trim())
+      .filter(Boolean)));
+  }
+  if (typeof rawKeywords !== "string") {
+    return [];
+  }
+  return Array.from(new Set(rawKeywords
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean)));
 }
 
 export function getGoogleAnySources(settings) {
@@ -198,6 +213,31 @@ export function buildGoogleAnyCombinedQuery(query, scopes) {
   return `${trimmedQuery} (${clause})`;
 }
 
+function formatKeywordToken(keyword) {
+  const trimmed = String(keyword || "").trim();
+  if (!trimmed) {
+    return "";
+  }
+  if (/\s/.test(trimmed) && !/^".*"$/.test(trimmed)) {
+    return `"${trimmed}"`;
+  }
+  return trimmed;
+}
+
+function buildQueryWithManualKeywords(query, manualKeywords) {
+  const trimmedQuery = String(query || "").trim();
+  if (!trimmedQuery) {
+    return "";
+  }
+  const tokens = normalizeGoogleAnyKeywords(manualKeywords)
+    .map((keyword) => formatKeywordToken(keyword))
+    .filter(Boolean);
+  if (!tokens.length) {
+    return trimmedQuery;
+  }
+  return `${trimmedQuery} (${tokens.join(" OR ")})`;
+}
+
 function buildGoogleAnySingleQuery(query, scope) {
   const trimmedQuery = String(query || "").trim();
   const normalizedScope = normalizeScope(scope);
@@ -213,19 +253,28 @@ function toGoogleSearchUrl(query) {
 
 export function buildGoogleAnyUrls(query, settings) {
   const mode = sanitizeGoogleAnyMode(settings && settings.googleAnyPlatform ? settings.googleAnyPlatform.mode : "");
+  const manualKeywords = settings
+    && settings.googleAnyPlatform
+    && Array.isArray(settings.googleAnyPlatform.manualKeywords)
+    ? settings.googleAnyPlatform.manualKeywords
+    : [];
   const selectedSources = getGoogleAnySelectedSources(settings);
   const scopes = selectedSources.map((entry) => entry.scope);
+  const queryWithManualKeywords = buildQueryWithManualKeywords(query, manualKeywords);
+  if (!queryWithManualKeywords) {
+    return [];
+  }
   if (!scopes.length) {
     return [];
   }
 
   if (mode === GOOGLE_ANY_MODE.SEPARATE) {
     return scopes
-      .map((scope) => buildGoogleAnySingleQuery(query, scope))
+      .map((scope) => buildGoogleAnySingleQuery(queryWithManualKeywords, scope))
       .filter((value) => Boolean(value))
       .map((value) => toGoogleSearchUrl(value));
   }
 
-  const combined = buildGoogleAnyCombinedQuery(query, scopes);
+  const combined = buildGoogleAnyCombinedQuery(queryWithManualKeywords, scopes);
   return combined ? [toGoogleSearchUrl(combined)] : [];
 }

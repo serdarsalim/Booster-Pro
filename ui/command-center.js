@@ -4,6 +4,7 @@ import {
   GOOGLE_ANY_MODE,
   getDefaultGoogleAnySourceIds,
   getGoogleAnySources,
+  normalizeGoogleAnyKeywords,
   sanitizeGoogleAnyMode
 } from "../shared/googleAnyPlatform.js";
 
@@ -92,6 +93,7 @@ let activeView = "menu";
 let editMode = false;
 let editDraft = null;
 let googleAnySearchTerm = "";
+let googleAnyKeywordsInputRaw = "";
 
 let activeAddSectionId = null;
 let sharedCatalog = [];
@@ -383,6 +385,9 @@ function ensureSettingsShape(targetSettings) {
   const googleAnySourceIds = new Set(googleAnySources.map((entry) => entry.engineId));
   targetSettings.googleAnyPlatform = targetSettings.googleAnyPlatform || {};
   targetSettings.googleAnyPlatform.mode = sanitizeGoogleAnyMode(targetSettings.googleAnyPlatform.mode);
+  targetSettings.googleAnyPlatform.manualKeywords = normalizeGoogleAnyKeywords(
+    targetSettings.googleAnyPlatform.manualKeywords
+  );
   const hasStoredSelection = Array.isArray(targetSettings.googleAnyPlatform.selectedEngineIds);
   const selected = hasStoredSelection
     ? targetSettings.googleAnyPlatform.selectedEngineIds.filter((engineId) => (
@@ -522,16 +527,16 @@ function renderGoogleAnyModeHelp(mode, selectedCount) {
   }
 
   if (selectedCount <= 0) {
-    help.textContent = "Select at least one platform to run Google+ Search.";
+    help.textContent = "Select at least one website keyword to run Google+ Search.";
     return;
   }
 
   if (mode === GOOGLE_ANY_MODE.SEPARATE) {
-    help.textContent = `Multi tab: opens ${selectedCount} Google tabs, one per selected platform.`;
+    help.textContent = `Multi tab: opens ${selectedCount} Google tabs, one per selected website keyword.`;
     return;
   }
 
-  help.textContent = "One tab: opens 1 Google tab with all selected platforms combined.";
+  help.textContent = "One tab: opens 1 Google tab with all selected website keywords combined.";
 }
 
 function renderGoogleAnyView() {
@@ -545,6 +550,7 @@ function renderGoogleAnyView() {
 
   const sources = getGoogleAnyVisibleSources(currentSettings);
   const selectedIds = currentSettings.googleAnyPlatform.selectedEngineIds;
+  const manualKeywords = normalizeGoogleAnyKeywords(currentSettings.googleAnyPlatform.manualKeywords);
   const selectedCount = sources.filter((entry) => selectedIds.includes(entry.engineId)).length;
   const selectedEntries = sources
     .filter((entry) => selectedIds.includes(entry.engineId))
@@ -560,6 +566,16 @@ function renderGoogleAnyView() {
   }
   renderGoogleAnyModeHelp(currentSettings.googleAnyPlatform.mode, selectedCount);
 
+  const keywordsInput = document.getElementById("google-any-keywords-input");
+  if (keywordsInput instanceof HTMLInputElement) {
+    if (document.activeElement === keywordsInput && !googleAnyKeywordsInputRaw) {
+      googleAnyKeywordsInputRaw = keywordsInput.value;
+    }
+    keywordsInput.value = document.activeElement === keywordsInput
+      ? googleAnyKeywordsInputRaw
+      : manualKeywords.join(", ");
+  }
+
   const searchInput = document.getElementById("google-any-engine-search");
   if (searchInput instanceof HTMLInputElement) {
     searchInput.value = googleAnySearchTerm;
@@ -571,17 +587,23 @@ function renderGoogleAnyView() {
 
   const selectedList = document.getElementById("google-any-selected-list");
   if (selectedList instanceof HTMLElement) {
-    if (!selectedEntries.length) {
-      selectedList.innerHTML = "<span class=\"google-any-selected-empty\">No platforms selected.</span>";
+    const manualKeywordPills = manualKeywords.map((keyword) => (
+      `<span class="google-any-selected-pill">
+        <span>${escapeHtml(keyword)}</span>
+        <button type="button" data-google-any-remove-keyword="${escapeHtml(keyword)}" aria-label="Remove ${escapeHtml(keyword)} keyword">&times;</button>
+      </span>`
+    ));
+    const selectedEntryPills = selectedEntries.map((entry) => (
+      `<span class="google-any-selected-pill">
+        <span>${escapeHtml(entry.name)}</span>
+        <button type="button" data-google-any-remove-id="${escapeHtml(entry.engineId)}" aria-label="Remove ${escapeHtml(entry.name)} keyword">&times;</button>
+      </span>`
+    ));
+    const pills = [...manualKeywordPills, ...selectedEntryPills];
+    if (!pills.length) {
+      selectedList.innerHTML = "<span class=\"google-any-selected-empty\">No keywords selected.</span>";
     } else {
-      selectedList.innerHTML = selectedEntries
-        .map((entry) => (
-          `<span class="google-any-selected-pill">
-            <span>${escapeHtml(entry.name)}</span>
-            <button type="button" data-google-any-remove-id="${escapeHtml(entry.engineId)}" aria-label="Remove ${escapeHtml(entry.name)}">&times;</button>
-          </span>`
-        ))
-        .join("");
+      selectedList.innerHTML = pills.join("");
     }
   }
 
@@ -756,7 +778,11 @@ function runGoogleAnySearch() {
     return;
   }
 
-  sendMessage("RUN_GOOGLE_ANY", { query }).catch(() => undefined);
+  flushAutosave()
+    .catch(() => undefined)
+    .finally(() => {
+      sendMessage("RUN_GOOGLE_ANY", { query }).catch(() => undefined);
+    });
 }
 
 function removeEngineFromAllSections(targetSettings, engineId) {
@@ -1519,6 +1545,18 @@ function bindEvents() {
       return;
     }
 
+    if (target.id === "google-any-keywords-input" && target instanceof HTMLInputElement) {
+      if (!settings) {
+        return;
+      }
+      googleAnyKeywordsInputRaw = target.value;
+      ensureSettingsShape(settings);
+      settings.googleAnyPlatform.manualKeywords = normalizeGoogleAnyKeywords(target.value);
+      queueAutosave();
+      renderGoogleAnyView();
+      return;
+    }
+
     if (!editMode || !editDraft) {
       return;
     }
@@ -1552,6 +1590,11 @@ function bindEvents() {
   document.addEventListener("change", (event) => {
     const target = event.target;
     if (!(target instanceof HTMLInputElement)) {
+      return;
+    }
+    if (target.id === "google-any-keywords-input") {
+      googleAnyKeywordsInputRaw = "";
+      renderGoogleAnyView();
       return;
     }
     if (target.id === "import-engine-file") {
@@ -1624,6 +1667,21 @@ function bindEvents() {
       ensureSettingsShape(settings);
       settings.googleAnyPlatform.selectedEngineIds = (settings.googleAnyPlatform.selectedEngineIds || [])
         .filter((engineId) => engineId !== googleAnyRemoveId);
+      queueAutosave();
+      renderGoogleAnyView();
+      return;
+    }
+
+    const googleAnyRemoveKeyword = target.getAttribute("data-google-any-remove-keyword");
+    if (googleAnyRemoveKeyword) {
+      if (!settings) {
+        return;
+      }
+      ensureSettingsShape(settings);
+      settings.googleAnyPlatform.manualKeywords = normalizeGoogleAnyKeywords(
+        (settings.googleAnyPlatform.manualKeywords || [])
+          .filter((keyword) => keyword !== googleAnyRemoveKeyword)
+      );
       queueAutosave();
       renderGoogleAnyView();
       return;

@@ -3,6 +3,7 @@ import {
   GOOGLE_ANY_MODE,
   getDefaultGoogleAnySourceIds,
   getGoogleAnySources,
+  normalizeGoogleAnyKeywords,
   sanitizeGoogleAnyMode
 } from "./googleAnyPlatform.js";
 
@@ -116,7 +117,8 @@ export const DEFAULT_SETTINGS = {
     darkMode: false
   },
   googleAnyPlatform: {
-    mode: GOOGLE_ANY_MODE.COMBINED,
+    mode: GOOGLE_ANY_MODE.SEPARATE,
+    manualKeywords: [],
     selectedEngineIds: getDefaultGoogleAnySourceIds(getGoogleAnySources({
       customEngines: DEFAULT_CUSTOM_ENGINES,
       engineLabelOverrides: {}
@@ -376,13 +378,16 @@ function sanitizeGoogleAnyPlatformSettings(rawGoogleAnyPlatform, sourceEntries) 
     : {};
   const allowedIds = sourceEntries.map((entry) => entry.engineId);
   const allowedSet = new Set(allowedIds);
+  const hasStoredSelection = Array.isArray(raw.selectedEngineIds);
   const selectedFromInput = dedupeIds(raw.selectedEngineIds, allowedSet);
-  const selectedEngineIds = selectedFromInput.length
+  const selectedEngineIds = hasStoredSelection
     ? selectedFromInput
     : getDefaultGoogleAnySourceIds(sourceEntries);
+  const manualKeywords = normalizeGoogleAnyKeywords(raw.manualKeywords);
 
   return {
     mode: sanitizeGoogleAnyMode(raw.mode),
+    manualKeywords,
     selectedEngineIds
   };
 }

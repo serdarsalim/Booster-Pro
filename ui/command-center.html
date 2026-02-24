@@ -79,15 +79,15 @@
         <div class="google-any-block google-any-mode-block">
           <div class="google-any-block-body">
             <div class="google-any-mode-row">
-              <p class="google-any-mode-label">Google + Any Platform mode</p>
+              <p class="google-any-mode-label">Build your Google Search</p>
               <div class="google-any-mode-toggle" role="radiogroup" aria-label="Google any mode">
-                <label class="google-any-mode-option">
-                  <input type="radio" name="google-any-mode" value="combined">
-                  <span>One tab</span>
-                </label>
                 <label class="google-any-mode-option">
                   <input type="radio" name="google-any-mode" value="separate">
                   <span>Multi tab</span>
+                </label>
+                <label class="google-any-mode-option">
+                  <input type="radio" name="google-any-mode" value="combined">
+                  <span>One tab</span>
                 </label>
               </div>
             </div>
@@ -97,20 +97,33 @@
 
         <div class="google-any-block google-any-platforms-block">
           <div class="google-any-block-body">
+            <label class="google-any-field-title" for="google-any-keywords-input">Keywords</label>
+            <input
+              id="google-any-keywords-input"
+              type="text"
+              placeholder="e.g. profile, hiring, founder, san francisco"
+              aria-label="Keywords, comma separated"
+            >
+            <p class="google-any-copy">Add keywords manually, comma separated.</p>
+
+            <label class="google-any-field-title" for="google-any-engine-search">Add more from the list</label>
+            <input id="google-any-engine-search" type="text" placeholder="Search keywords">
+            <p class="google-any-copy">Select multiple keywords by clicking a filter:</p>
+
+            <div class="google-any-presets-row" role="tablist" aria-label="Google plus category presets">
+              <button id="google-any-preset-social" class="ghost google-any-preset-btn" type="button">Social</button>
+              <button id="google-any-preset-news" class="ghost google-any-preset-btn" type="button">News</button>
+              <button id="google-any-preset-tech" class="ghost google-any-preset-btn" type="button">Tech</button>
+              <button id="google-any-preset-utilities" class="ghost google-any-preset-btn" type="button">Utilities</button>
+            </div>
+
+            <div id="google-any-source-list" class="google-any-source-list"></div>
+
             <div class="google-any-selected-wrap">
               <span class="google-any-selected-label">Selected:</span>
               <div id="google-any-selected-list" class="google-any-selected-list"></div>
             </div>
-            <input id="google-any-engine-search" type="text" placeholder="Search engines">
-            <div id="google-any-source-list" class="google-any-source-list"></div>
           </div>
-        </div>
-
-        <div class="google-any-presets-row" role="tablist" aria-label="Google plus category presets">
-          <button id="google-any-preset-social" class="ghost google-any-preset-btn" type="button">Social</button>
-          <button id="google-any-preset-news" class="ghost google-any-preset-btn" type="button">News</button>
-          <button id="google-any-preset-tech" class="ghost google-any-preset-btn" type="button">Tech</button>
-          <button id="google-any-preset-utilities" class="ghost google-any-preset-btn" type="button">Utilities</button>
         </div>
       </section>
     </section>
