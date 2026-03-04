@@ -41,42 +41,55 @@
 
     <section id="settings-view" class="page-view" hidden>
       <section class="engine-panel settings-panel">
-        <h2>Settings</h2>
-        <div class="settings-grid">
-          <label class="setting-row" for="setting-open-background">
-            <span class="setting-inline">
-              <span>Open searches in background</span>
-              <span class="engine-switch setting-switch">
-                <input id="setting-open-background" class="engine-toggle-input" type="checkbox">
-                <span class="engine-toggle"></span>
+        <div class="settings-card">
+          <div class="settings-grid">
+            <label class="setting-row" for="setting-open-background">
+              <span class="setting-inline">
+                <span class="setting-copy">
+                  <span class="setting-title">Open searches in background</span>
+                  <span class="setting-help">New tabs open without stealing focus.</span>
+                </span>
+                <span class="engine-switch setting-switch">
+                  <input id="setting-open-background" class="engine-toggle-input" type="checkbox">
+                  <span class="engine-toggle"></span>
+                </span>
               </span>
-            </span>
-          </label>
-          <label class="setting-row" for="setting-open-next">
-            <span class="setting-inline">
-              <span>Open next to current tab</span>
-              <span class="engine-switch setting-switch">
-                <input id="setting-open-next" class="engine-toggle-input" type="checkbox">
-                <span class="engine-toggle"></span>
+            </label>
+            <label class="setting-row" for="setting-open-next">
+              <span class="setting-inline">
+                <span class="setting-copy">
+                  <span class="setting-title">Open next to current tab</span>
+                  <span class="setting-help">Keeps newly opened tabs beside your current tab.</span>
+                </span>
+                <span class="engine-switch setting-switch">
+                  <input id="setting-open-next" class="engine-toggle-input" type="checkbox">
+                  <span class="engine-toggle"></span>
+                </span>
               </span>
-            </span>
-          </label>
-          <label class="setting-row" for="setting-open-standalone-window">
-            <span class="setting-inline">
-              <span>Open extension in standalone window from toolbar icon</span>
-              <span class="engine-switch setting-switch">
-                <input id="setting-open-standalone-window" class="engine-toggle-input" type="checkbox">
-                <span class="engine-toggle"></span>
+            </label>
+            <label class="setting-row" for="setting-open-standalone-window">
+              <span class="setting-inline">
+                <span class="setting-copy">
+                  <span class="setting-title">Open Searcher X in standalone window from toolbar icon</span>
+                  <span class="setting-help">Clicking the extension icon opens a dedicated popup window.</span>
+                </span>
+                <span class="engine-switch setting-switch">
+                  <input id="setting-open-standalone-window" class="engine-toggle-input" type="checkbox">
+                  <span class="engine-toggle"></span>
+                </span>
               </span>
-            </span>
-          </label>
+            </label>
+          </div>
         </div>
-        <div class="settings-actions">
-          <button id="export-engine-list" class="ghost" type="button">Export Engine List</button>
-          <button id="import-engine-list" class="ghost" type="button">Import Engine List</button>
-          <input id="import-engine-file" type="file" accept="application/json,.json" hidden>
-          <button id="open-shortcuts" class="ghost" type="button">Keyboard Shortcuts for Chrome Tabs</button>
-          <button id="reset-defaults-settings" class="ghost" type="button">Reset Search Engines to Default</button>
+        <div class="settings-card">
+          <h3 class="settings-section-title">Actions</h3>
+          <div class="settings-actions">
+            <button id="export-engine-list" class="ghost settings-action-btn" type="button">Export Engine List</button>
+            <button id="import-engine-list" class="ghost settings-action-btn" type="button">Import Engine List</button>
+            <button id="reset-defaults-settings" class="ghost settings-action-btn settings-action-danger" type="button">Reset Engines to Default</button>
+            <input id="import-engine-file" type="file" accept="application/json,.json" hidden>
+            <button id="open-shortcuts" class="ghost settings-action-btn settings-action-span-all" type="button">Keyboard Shortcuts for Chrome Tabs</button>
+          </div>
         </div>
         <footer class="settings-footer">
           <button id="open-website" class="settings-link" type="button">More info: serdarsalim.com/searcher-x</button>

@@ -58,7 +58,7 @@ async function rebuildContextMenusNow(settings) {
   await createMenu({
     id: MENU_IDS.GOOGLE_ANY_PLATFORM,
     parentId: MENU_IDS.ROOT,
-    title: "Search with Google+",
+    title: "Search with Google",
     contexts: ["selection", "link"]
   });
 

@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Searcher X",
-  "description": "Chrome extension to search text in multiple search engines instantly.",
-  "version": "2026.2.24",
+  "description": "Search selected text across web and AI engines from the context menu and popup.",
+  "version": "2026.3.4",
   "permissions": [
     "contextMenus",
     "storage"
