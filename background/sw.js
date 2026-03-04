@@ -3,8 +3,33 @@ import { handleCommand } from "./commands.js";
 import { MENU_IDS, parseEngineIdFromMenu, rebuildContextMenus } from "./contextMenus.js";
 import { buildGoogleAnySearchUrls, buildSearchUrls, openUrls } from "./router.js";
 
+const COMMAND_CENTER_POPUP_PATH = "ui/command-center.html";
+
 function getQueryFromInfo(info) {
   return (info.selectionText || info.linkUrl || "").trim();
+}
+
+function shouldOpenToolbarInStandaloneWindow(settings) {
+  return Boolean(
+    settings
+    && settings.behavior
+    && settings.behavior.openToolbarInStandaloneWindow
+  );
+}
+
+async function applyToolbarActionMode(settings) {
+  const popup = shouldOpenToolbarInStandaloneWindow(settings) ? "" : COMMAND_CENTER_POPUP_PATH;
+  await chrome.action.setPopup({ popup });
+}
+
+async function openCommandCenterStandaloneWindow() {
+  await chrome.windows.create({
+    url: chrome.runtime.getURL(COMMAND_CENTER_POPUP_PATH),
+    type: "popup",
+    width: 900,
+    height: 760,
+    focused: true
+  });
 }
 
 async function runSearch({ query, engineId, engineIds }) {
@@ -50,6 +75,7 @@ async function runGoogleAnySearch({ query }) {
 async function bootstrap() {
   const settings = await getSettings();
   await rebuildContextMenus(settings);
+  await applyToolbarActionMode(settings);
 }
 
 chrome.runtime.onInstalled.addListener(() => {
@@ -80,6 +106,14 @@ chrome.commands.onCommand.addListener((command) => {
   handleCommand(command);
 });
 
+chrome.action.onClicked.addListener(async () => {
+  const settings = await getSettings();
+  if (!shouldOpenToolbarInStandaloneWindow(settings)) {
+    return;
+  }
+  await openCommandCenterStandaloneWindow();
+});
+
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (!message || !message.type) {
     return false;
@@ -95,6 +129,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     if (message.type === "SAVE_SETTINGS") {
       const settings = await saveSettings(message.settings || {});
       await rebuildContextMenus(settings);
+      await applyToolbarActionMode(settings);
       sendResponse({ ok: true, settings });
       return;
     }

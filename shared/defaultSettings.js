@@ -114,11 +114,13 @@ export const DEFAULT_SETTINGS = {
   behavior: {
     openInBackground: true,
     openNextToCurrent: true,
-    darkMode: false
+    darkMode: false,
+    openToolbarInStandaloneWindow: false
   },
   googleAnyPlatform: {
     mode: GOOGLE_ANY_MODE.SEPARATE,
     manualKeywords: [],
+    selectedManualKeywords: [],
     selectedEngineIds: getDefaultGoogleAnySourceIds(getGoogleAnySources({
       customEngines: DEFAULT_CUSTOM_ENGINES,
       engineLabelOverrides: {}
@@ -384,10 +386,16 @@ function sanitizeGoogleAnyPlatformSettings(rawGoogleAnyPlatform, sourceEntries) 
     ? selectedFromInput
     : getDefaultGoogleAnySourceIds(sourceEntries);
   const manualKeywords = normalizeGoogleAnyKeywords(raw.manualKeywords);
+  const hasStoredManualSelection = Array.isArray(raw.selectedManualKeywords);
+  const selectedManualKeywords = hasStoredManualSelection
+    ? normalizeGoogleAnyKeywords(raw.selectedManualKeywords)
+      .filter((keyword) => manualKeywords.includes(keyword))
+    : manualKeywords.slice();
 
   return {
     mode: sanitizeGoogleAnyMode(raw.mode),
     manualKeywords,
+    selectedManualKeywords,
     selectedEngineIds
   };
 }
@@ -422,7 +430,11 @@ export function sanitizeSettings(rawSettings) {
     darkMode:
       settings.behavior && typeof settings.behavior.darkMode === "boolean"
         ? settings.behavior.darkMode
-        : DEFAULT_SETTINGS.behavior.darkMode
+        : DEFAULT_SETTINGS.behavior.darkMode,
+    openToolbarInStandaloneWindow:
+      settings.behavior && typeof settings.behavior.openToolbarInStandaloneWindow === "boolean"
+        ? settings.behavior.openToolbarInStandaloneWindow
+        : DEFAULT_SETTINGS.behavior.openToolbarInStandaloneWindow
   };
   const googleAnySources = getGoogleAnySources({
     customEngines,
