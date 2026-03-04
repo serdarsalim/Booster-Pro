@@ -14,10 +14,8 @@
         <h1>Searcher X</h1>
       </button>
       <div class="top-actions">
-        <button id="go-list-view" class="ghost icon-btn logo-nav-btn" type="button" aria-label="Show search engine list" title="List">
-          <img src="../images/16.png" alt="" class="icon-btn-logo">
-        </button>
-        <button id="open-google-any" class="ghost icon-btn icon-btn-text" type="button" aria-label="Open Google plus any platform" title="Google + Any Platform">G+</button>
+        <button id="go-list-view" class="ghost top-action-text-btn" type="button" aria-label="Show search engine list" title="Search on Platforms">Search on Platforms</button>
+        <button id="open-google-any" class="ghost top-action-text-btn" type="button" aria-label="Open Search with Google panel" title="Search with Google">Search with Google</button>
         <button id="start-edit" class="ghost icon-btn" type="button" aria-label="Edit engines and headers" title="Edit">&#9998;</button>
         <button id="open-settings" class="ghost icon-btn" type="button" aria-label="Open settings" title="Settings">&#9881;</button>
         <button id="toggle-theme" class="ghost icon-btn theme-toggle-btn" type="button" aria-label="Toggle dark mode" title="Enable dark mode">&#9789;</button>
@@ -26,11 +24,11 @@
 
     <section id="menu-view" class="page-view">
       <section class="query-row">
+        <label class="query-label" for="query-input">Search query</label>
         <div class="query-input-wrap">
           <input id="query-input" type="text" placeholder="Type your search query">
           <button id="clear-query" class="query-clear" type="button" aria-label="Clear search query" hidden>x</button>
         </div>
-        <button id="google-any-search-quick" class="primary query-quick-btn" type="button" aria-label="Search with Google plus any platform">Google+ Search</button>
       </section>
 
       <section class="engine-panel">
@@ -69,18 +67,35 @@
           <button id="reset-defaults-settings" class="ghost" type="button">Reset Search Engines to Default</button>
         </div>
         <footer class="settings-footer">
-          <button id="open-website" class="settings-link" type="button">Visit Website: serdarsalim.com/searcher-x</button>
+          <button id="open-website" class="settings-link" type="button">More info: serdarsalim.com/searcher-x</button>
         </footer>
+        <p class="settings-disclaimer">
+          Searcher X is an independent productivity tool and is not affiliated with, endorsed by, or sponsored by Google or other search providers.
+        </p>
       </section>
     </section>
 
     <section id="google-any-view" class="page-view" hidden>
       <section class="engine-panel google-any-panel">
+        <div class="google-any-query-row">
+          <label class="google-any-query-label" for="google-any-query-input">Search query</label>
+          <input
+            id="google-any-query-input"
+            class="google-any-query-input"
+            type="text"
+            placeholder="Type your search query"
+            aria-label="Search query"
+          >
+        </div>
+
         <div class="google-any-block google-any-mode-block">
           <div class="google-any-block-body">
             <div class="google-any-mode-row">
-              <p class="google-any-mode-label">Build your Google Search</p>
-              <div class="google-any-mode-toggle" role="radiogroup" aria-label="Google any mode">
+              <p class="google-any-mode-label">
+                Search method
+                <button id="google-any-info-open" class="google-any-info-btn" type="button" aria-label="What does Search with Google do?" title="What does Search with Google do?">(i)</button>
+              </p>
+              <div class="google-any-mode-toggle" role="radiogroup" aria-label="Google search mode">
                 <label class="google-any-mode-option">
                   <input type="radio" name="google-any-mode" value="separate">
                   <span>Multi tab</span>
@@ -99,17 +114,21 @@
           <div class="google-any-block-body">
             <div class="google-any-inline-row">
               <label class="google-any-field-title" for="google-any-keywords-input">Keywords</label>
-              <textarea
-                id="google-any-keywords-input"
-                rows="2"
-                placeholder="e.g. profile, hiring, founder, san francisco"
-                aria-label="Keywords, comma separated"
-              ></textarea>
-            </div>
-
-            <div class="google-any-inline-row">
-              <label class="google-any-field-title" for="google-any-engine-search">Add more from the list</label>
-              <input id="google-any-engine-search" type="text" placeholder="Filter keywords">
+              <div class="google-any-keywords-input-wrap">
+                <input
+                  id="google-any-keywords-input"
+                  type="text"
+                  placeholder="Type keyword, then comma"
+                  aria-label="Keywords, comma separated"
+                >
+                <button
+                  id="google-any-keywords-edit"
+                  class="ghost icon-btn google-any-keywords-edit-btn"
+                  type="button"
+                  aria-label="Edit keyword pills"
+                  title="Edit keyword pills"
+                >&#9998;</button>
+              </div>
             </div>
 
             <div id="google-any-source-list" class="google-any-source-list"></div>
@@ -118,8 +137,7 @@
         </div>
 
         <div class="google-any-run-wrap">
-          <button id="google-any-run-inline" class="primary google-any-run-inline-btn" type="button">Google+ Search Now</button>
-          <p class="google-any-copy">This is the same as Google+ Search on the main landing page.</p>
+          <button id="google-any-run-inline" class="primary google-any-run-inline-btn" type="button">Search with Google</button>
         </div>
       </section>
     </section>
@@ -158,6 +176,25 @@
           <button id="add-manual-engine" class="primary" type="button" hidden>Add</button>
         </div>
       </section>
+    </section>
+  </div>
+
+  <div id="google-any-info-modal" class="modal-backdrop" hidden>
+    <section class="modal-card google-any-info-card" role="dialog" aria-modal="true" aria-labelledby="google-any-info-title">
+      <header class="modal-header">
+        <h2 id="google-any-info-title">What this does</h2>
+      </header>
+      <section class="modal-section">
+        <p class="google-any-info-copy">
+          Search with Google uses your current query and the selected keywords in this panel to build targeted Google searches.
+        </p>
+        <p class="google-any-info-copy">
+          Multi tab opens one tab per keyword. One tab combines all selected keywords into a single Google search.
+        </p>
+      </section>
+      <footer class="google-any-info-actions">
+        <button id="google-any-info-close" class="primary" type="button">Got it</button>
+      </footer>
     </section>
   </div>
 

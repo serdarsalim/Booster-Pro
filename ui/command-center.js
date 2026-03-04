@@ -9,6 +9,7 @@ import {
 } from "../shared/googleAnyPlatform.js";
 
 const QUERY_STORAGE_KEY = "boosterPersistedQuery";
+const TOP_TAB_STORAGE_KEY = "boosterPersistedTopTab";
 const LAYOUT_COLUMN_COUNT = 3;
 
 const SHARED_DISPLAY_CATEGORY_ORDER = Object.freeze([
@@ -92,8 +93,8 @@ let querySelectOnFocusArmed = true;
 let activeView = "menu";
 let editMode = false;
 let editDraft = null;
-let googleAnySearchTerm = "";
 let googleAnyKeywordsInputRaw = "";
+let googleAnyKeywordEditMode = false;
 
 let activeAddSectionId = null;
 let sharedCatalog = [];
@@ -171,18 +172,41 @@ function writePersistedQuery(query) {
   });
 }
 
+function readPersistedTopTab() {
+  return new Promise((resolve) => {
+    chrome.storage.local.get([TOP_TAB_STORAGE_KEY], (result) => {
+      if (chrome.runtime.lastError) {
+        resolve("menu");
+        return;
+      }
+      const raw = result && typeof result[TOP_TAB_STORAGE_KEY] === "string"
+        ? result[TOP_TAB_STORAGE_KEY]
+        : "";
+      resolve(raw === "google-any" ? "google-any" : "menu");
+    });
+  });
+}
+
+function writePersistedTopTab(viewId) {
+  const normalized = viewId === "google-any" ? "google-any" : "menu";
+  return new Promise((resolve, reject) => {
+    chrome.storage.local.set({ [TOP_TAB_STORAGE_KEY]: normalized }, () => {
+      if (chrome.runtime.lastError) {
+        reject(new Error(chrome.runtime.lastError.message));
+        return;
+      }
+      resolve();
+    });
+  });
+}
+
 function updateQueryControls() {
   const queryInput = document.getElementById("query-input");
   const clearButton = document.getElementById("clear-query");
-  const googleAnyQuickButton = document.getElementById("google-any-search-quick");
   if (!(queryInput instanceof HTMLInputElement) || !(clearButton instanceof HTMLButtonElement)) {
     return;
   }
-  const hasQuery = queryInput.value.trim().length > 0;
   clearButton.hidden = queryInput.value.length === 0;
-  if (googleAnyQuickButton instanceof HTMLButtonElement) {
-    googleAnyQuickButton.disabled = !hasQuery;
-  }
 }
 
 function persistCurrentQuery() {
@@ -406,6 +430,12 @@ function ensureSettingsShape(targetSettings) {
   targetSettings.googleAnyPlatform.manualKeywords = normalizeGoogleAnyKeywords(
     targetSettings.googleAnyPlatform.manualKeywords
   );
+  const normalizedManualKeywords = targetSettings.googleAnyPlatform.manualKeywords;
+  const hasStoredManualSelection = Array.isArray(targetSettings.googleAnyPlatform.selectedManualKeywords);
+  targetSettings.googleAnyPlatform.selectedManualKeywords = hasStoredManualSelection
+    ? normalizeGoogleAnyKeywords(targetSettings.googleAnyPlatform.selectedManualKeywords)
+      .filter((keyword) => normalizedManualKeywords.includes(keyword))
+    : normalizedManualKeywords.slice();
   const hasStoredSelection = Array.isArray(targetSettings.googleAnyPlatform.selectedEngineIds);
   const selected = hasStoredSelection
     ? targetSettings.googleAnyPlatform.selectedEngineIds.filter((engineId) => (
@@ -434,10 +464,12 @@ function updateTopActionButtons() {
   const startEditButton = document.getElementById("start-edit");
   const settingsButton = document.getElementById("open-settings");
   const googleAnyButton = document.getElementById("open-google-any");
+  const listViewButton = document.getElementById("go-list-view");
 
   if (!(startEditButton instanceof HTMLButtonElement)
     || !(settingsButton instanceof HTMLButtonElement)
-    || !(googleAnyButton instanceof HTMLButtonElement)) {
+    || !(googleAnyButton instanceof HTMLButtonElement)
+    || !(listViewButton instanceof HTMLButtonElement)) {
     return;
   }
 
@@ -448,6 +480,7 @@ function updateTopActionButtons() {
   startEditButton.title = editMode ? "Editing (click to exit)" : "Edit";
   settingsButton.setAttribute("aria-pressed", activeView === "settings" ? "true" : "false");
   googleAnyButton.setAttribute("aria-pressed", activeView === "google-any" ? "true" : "false");
+  listViewButton.setAttribute("aria-pressed", activeView === "menu" ? "true" : "false");
 }
 
 function setActiveView(viewId) {
@@ -462,6 +495,11 @@ function setActiveView(viewId) {
   activeView = viewId === "settings"
     ? "settings"
     : (viewId === "google-any" ? "google-any" : "menu");
+
+  if (activeView === "menu" || activeView === "google-any") {
+    writePersistedTopTab(activeView).catch(() => undefined);
+  }
+
   menuView.hidden = activeView !== "menu";
   settingsView.hidden = activeView !== "settings";
   googleAnyView.hidden = activeView !== "google-any";
@@ -532,7 +570,7 @@ function renderGoogleAnyModeHelp(mode, selectedCount) {
   }
 
   if (selectedCount <= 0) {
-    help.textContent = "Select at least one website keyword to run Google+ Search.";
+    help.textContent = "Select at least one website keyword to run Search with Google.";
     return;
   }
 
@@ -544,6 +582,70 @@ function renderGoogleAnyModeHelp(mode, selectedCount) {
   help.textContent = "One tab: opens 1 Google tab with all selected website keywords combined.";
 }
 
+function addGoogleAnyManualKeywordsFromInput(rawValue, includeTrailingToken = false) {
+  if (!settings) {
+    return String(rawValue || "");
+  }
+  ensureSettingsShape(settings);
+  const value = String(rawValue || "");
+  const parts = value.split(",");
+  const incomingParts = includeTrailingToken ? parts : parts.slice(0, -1);
+  const remainder = includeTrailingToken ? "" : String(parts[parts.length - 1] || "");
+  const incomingKeywords = normalizeGoogleAnyKeywords(incomingParts.join(","));
+  if (!incomingKeywords.length) {
+    return remainder;
+  }
+  const currentKeywords = normalizeGoogleAnyKeywords(settings.googleAnyPlatform.manualKeywords);
+  const mergedKeywords = Array.from(new Set([...currentKeywords, ...incomingKeywords]));
+  settings.googleAnyPlatform.manualKeywords = mergedKeywords;
+  const currentSelectedManual = normalizeGoogleAnyKeywords(settings.googleAnyPlatform.selectedManualKeywords);
+  settings.googleAnyPlatform.selectedManualKeywords = Array.from(new Set([
+    ...currentSelectedManual,
+    ...incomingKeywords
+  ])).filter((keyword) => mergedKeywords.includes(keyword));
+  queueAutosave();
+  return remainder;
+}
+
+function removeGoogleAnyManualKeyword(keyword) {
+  if (!settings) {
+    return;
+  }
+  ensureSettingsShape(settings);
+  const target = String(keyword || "").trim().toLowerCase();
+  if (!target) {
+    return;
+  }
+  settings.googleAnyPlatform.manualKeywords = normalizeGoogleAnyKeywords(settings.googleAnyPlatform.manualKeywords)
+    .filter((value) => value.trim().toLowerCase() !== target);
+  settings.googleAnyPlatform.selectedManualKeywords = normalizeGoogleAnyKeywords(
+    settings.googleAnyPlatform.selectedManualKeywords
+  ).filter((value) => value.trim().toLowerCase() !== target);
+  queueAutosave();
+}
+
+function removeGoogleAnySelectedSource(engineId) {
+  if (!settings) {
+    return;
+  }
+  ensureSettingsShape(settings);
+  settings.googleAnyPlatform.selectedEngineIds = (settings.googleAnyPlatform.selectedEngineIds || [])
+    .filter((value) => value !== engineId);
+  queueAutosave();
+}
+
+function resetGoogleAnyKeywordsAndSources() {
+  if (!settings) {
+    return;
+  }
+  ensureSettingsShape(settings);
+  const visibleSources = getGoogleAnyVisibleSources(settings);
+  settings.googleAnyPlatform.selectedEngineIds = getDefaultGoogleAnySourceIds(visibleSources);
+  settings.googleAnyPlatform.manualKeywords = [];
+  settings.googleAnyPlatform.selectedManualKeywords = [];
+  queueAutosave();
+}
+
 function renderGoogleAnyView() {
   const currentSettings = getWorkingSettings();
   if (!currentSettings) {
@@ -552,12 +654,21 @@ function renderGoogleAnyView() {
   ensureSettingsShape(currentSettings);
   const sourceList = document.getElementById("google-any-source-list");
   const sourceListScrollTop = sourceList instanceof HTMLElement ? sourceList.scrollTop : 0;
+  const googleAnyQueryInput = document.getElementById("google-any-query-input");
+  const queryInput = document.getElementById("query-input");
+  if (googleAnyQueryInput instanceof HTMLInputElement && queryInput instanceof HTMLInputElement) {
+    if (document.activeElement !== googleAnyQueryInput) {
+      googleAnyQueryInput.value = queryInput.value;
+    }
+  }
 
   const sources = getGoogleAnyVisibleSources(currentSettings);
   const selectedIds = currentSettings.googleAnyPlatform.selectedEngineIds;
   const manualKeywords = normalizeGoogleAnyKeywords(currentSettings.googleAnyPlatform.manualKeywords);
+  const selectedManualKeywords = normalizeGoogleAnyKeywords(currentSettings.googleAnyPlatform.selectedManualKeywords)
+    .filter((keyword) => manualKeywords.includes(keyword));
   const selectedKeywordCount = new Set([
-    ...manualKeywords.map((keyword) => keyword.toLowerCase()),
+    ...selectedManualKeywords.map((keyword) => keyword.toLowerCase()),
     ...sources
       .filter((entry) => selectedIds.includes(entry.engineId))
       .map((entry) => String(entry.name || "").trim().toLowerCase())
@@ -575,38 +686,92 @@ function renderGoogleAnyView() {
   renderGoogleAnyModeHelp(currentSettings.googleAnyPlatform.mode, selectedKeywordCount);
 
   const keywordsInput = document.getElementById("google-any-keywords-input");
-  if (keywordsInput instanceof HTMLInputElement || keywordsInput instanceof HTMLTextAreaElement) {
+  if (keywordsInput instanceof HTMLInputElement) {
     if (document.activeElement === keywordsInput && !googleAnyKeywordsInputRaw) {
       googleAnyKeywordsInputRaw = keywordsInput.value;
     }
-    keywordsInput.value = document.activeElement === keywordsInput
-      ? googleAnyKeywordsInputRaw
-      : manualKeywords.join(", ");
+    if (document.activeElement !== keywordsInput) {
+      keywordsInput.value = googleAnyKeywordsInputRaw;
+    }
   }
 
-  const searchInput = document.getElementById("google-any-engine-search");
-  if (searchInput instanceof HTMLInputElement) {
-    searchInput.value = googleAnySearchTerm;
+  const keywordEditButton = document.getElementById("google-any-keywords-edit");
+  if (keywordEditButton instanceof HTMLButtonElement) {
+    keywordEditButton.setAttribute("aria-pressed", googleAnyKeywordEditMode ? "true" : "false");
+    keywordEditButton.title = googleAnyKeywordEditMode ? "Done editing keywords" : "Edit keyword pills";
   }
-  const normalizedSearch = googleAnySearchTerm.trim().toLowerCase();
-  const filteredSources = (normalizedSearch
-    ? sources.filter((entry) => `${entry.name} ${entry.category}`.toLowerCase().includes(normalizedSearch))
-    : sources)
+
+  const filteredSources = sources
     .slice()
     .sort((a, b) => a.name.localeCompare(b.name));
 
-  if (sourceList instanceof HTMLElement) {
-    sourceList.innerHTML = filteredSources.length
-      ? filteredSources.map((entry) => {
-        const checked = selectedIds.includes(entry.engineId) ? "checked" : "";
-        return `
+  const customItemsHtml = manualKeywords
+    .map((keyword) => {
+      const removeButton = googleAnyKeywordEditMode
+        ? `
+          <button
+            type="button"
+            class="google-any-keyword-pill-remove"
+            data-google-any-pill-kind="custom"
+            data-google-any-pill-value="${escapeHtml(keyword)}"
+            aria-label="Remove ${escapeHtml(keyword)}"
+            title="Remove ${escapeHtml(keyword)}"
+          >&times;</button>
+        `
+        : "";
+      return `
+        <span class="google-any-chip-row">
+          <label class="google-any-source-chip google-any-custom-chip">
+            <input
+              type="checkbox"
+              data-google-any-custom-keyword="${escapeHtml(keyword)}"
+              ${selectedManualKeywords.includes(keyword) ? "checked" : ""}
+            >
+            <span class="google-any-source-name">${escapeHtml(keyword)}</span>
+          </label>
+          ${removeButton}
+        </span>
+      `;
+    }).join("");
+
+  const resetButtonHtml = googleAnyKeywordEditMode
+    ? "<button id=\"google-any-keywords-reset\" class=\"google-any-keyword-reset-btn google-any-keyword-reset-inline\" type=\"button\">Reset keywords</button>"
+    : "";
+  const sourceItemsHtml = filteredSources.length
+    ? filteredSources.map((entry) => {
+      const checked = selectedIds.includes(entry.engineId) ? "checked" : "";
+      const removeButton = googleAnyKeywordEditMode && checked
+        ? `
+          <button
+            type="button"
+            class="google-any-keyword-pill-remove"
+            data-google-any-pill-kind="source"
+            data-google-any-pill-value="${escapeHtml(entry.engineId)}"
+            aria-label="Remove ${escapeHtml(entry.name)}"
+            title="Remove ${escapeHtml(entry.name)}"
+          >&times;</button>
+        `
+        : "";
+      return `
+        <span class="google-any-chip-row">
           <label class="google-any-source-chip">
             <input type="checkbox" data-google-any-source-id="${escapeHtml(entry.engineId)}" ${checked}>
             <span class="google-any-source-name">${escapeHtml(entry.name)}</span>
           </label>
-        `;
-      }).join("")
-      : "<div class=\"google-any-empty\">No engines match your search.</div>";
+          ${removeButton}
+        </span>
+      `;
+    }).join("")
+    : "<div class=\"google-any-empty\">No engines match your search.</div>";
+
+  if (sourceList instanceof HTMLElement) {
+    sourceList.innerHTML = `
+      <div class="google-any-engine-chip-wrap">
+        ${customItemsHtml}
+        ${sourceItemsHtml}
+        ${resetButtonHtml}
+      </div>
+    `;
     sourceList.scrollTop = sourceListScrollTop;
   }
 
@@ -746,9 +911,14 @@ function runEngineSearch(engineId) {
 function runGoogleAnySearch() {
   const query = readMainQuery();
   if (!query) {
-    const queryInput = document.getElementById("query-input");
-    if (queryInput instanceof HTMLInputElement) {
-      queryInput.focus();
+    const googleAnyQueryInput = document.getElementById("google-any-query-input");
+    if (activeView === "google-any" && googleAnyQueryInput instanceof HTMLInputElement) {
+      googleAnyQueryInput.focus();
+    } else {
+      const queryInput = document.getElementById("query-input");
+      if (queryInput instanceof HTMLInputElement) {
+        queryInput.focus();
+      }
     }
     showToast("Enter a query first.");
     return;
@@ -1309,6 +1479,25 @@ function closeAddMoreModal() {
   activeAddSectionId = null;
 }
 
+function openGoogleAnyInfoModal() {
+  const modal = document.getElementById("google-any-info-modal");
+  const closeButton = document.getElementById("google-any-info-close");
+  if (!(modal instanceof HTMLElement)) {
+    return;
+  }
+  modal.hidden = false;
+  if (closeButton instanceof HTMLButtonElement) {
+    closeButton.focus();
+  }
+}
+
+function closeGoogleAnyInfoModal() {
+  const modal = document.getElementById("google-any-info-modal");
+  if (modal instanceof HTMLElement) {
+    modal.hidden = true;
+  }
+}
+
 function createUniqueCustomId(name, targetSettings) {
   const base = slugify(name) || "engine";
   const usedIds = new Set();
@@ -1440,6 +1629,8 @@ function clearDropTargets() {
 
 function bindEvents() {
   const queryInput = document.getElementById("query-input");
+  const googleAnyQueryInput = document.getElementById("google-any-query-input");
+  const googleAnyKeywordsInput = document.getElementById("google-any-keywords-input");
   const clearButton = document.getElementById("clear-query");
   const openInBackgroundInput = document.getElementById("setting-open-background");
   const openNextInput = document.getElementById("setting-open-next");
@@ -1464,6 +1655,28 @@ function bindEvents() {
       if (activeView === "google-any") {
         renderGoogleAnyView();
       }
+    });
+  }
+
+  if (googleAnyQueryInput instanceof HTMLInputElement) {
+    googleAnyQueryInput.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter") {
+        return;
+      }
+      event.preventDefault();
+      runGoogleAnySearch();
+    });
+  }
+
+  if (googleAnyKeywordsInput instanceof HTMLInputElement) {
+    googleAnyKeywordsInput.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter") {
+        return;
+      }
+      event.preventDefault();
+      googleAnyKeywordsInput.value = addGoogleAnyManualKeywordsFromInput(googleAnyKeywordsInput.value, true);
+      googleAnyKeywordsInputRaw = googleAnyKeywordsInput.value;
+      renderGoogleAnyView();
     });
   }
 
@@ -1505,6 +1718,15 @@ function bindEvents() {
       return;
     }
 
+    if (target.id === "google-any-query-input" && target instanceof HTMLInputElement) {
+      if (queryInput instanceof HTMLInputElement && queryInput.value !== target.value) {
+        queryInput.value = target.value;
+      }
+      updateQueryControls();
+      persistCurrentQuery().catch(() => undefined);
+      return;
+    }
+
     if (target.id === "shared-search-input") {
       refreshSharedSelect();
       return;
@@ -1515,21 +1737,16 @@ function bindEvents() {
       return;
     }
 
-    if (target.id === "google-any-engine-search" && target instanceof HTMLInputElement) {
-      googleAnySearchTerm = target.value;
-      renderGoogleAnyView();
-      return;
-    }
-
-    if (target.id === "google-any-keywords-input"
-      && (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement)) {
+    if (target.id === "google-any-keywords-input" && target instanceof HTMLInputElement) {
       if (!settings) {
         return;
       }
       googleAnyKeywordsInputRaw = target.value;
-      ensureSettingsShape(settings);
-      settings.googleAnyPlatform.manualKeywords = normalizeGoogleAnyKeywords(target.value);
-      queueAutosave();
+      if (!target.value.includes(",")) {
+        return;
+      }
+      target.value = addGoogleAnyManualKeywordsFromInput(target.value, false);
+      googleAnyKeywordsInputRaw = target.value;
       renderGoogleAnyView();
       return;
     }
@@ -1570,7 +1787,12 @@ function bindEvents() {
       return;
     }
     if (target.id === "google-any-keywords-input") {
-      googleAnyKeywordsInputRaw = "";
+      if (target instanceof HTMLInputElement) {
+        target.value = addGoogleAnyManualKeywordsFromInput(target.value, true);
+        googleAnyKeywordsInputRaw = target.value;
+      } else {
+        googleAnyKeywordsInputRaw = "";
+      }
       renderGoogleAnyView();
       return;
     }
@@ -1616,6 +1838,22 @@ function bindEvents() {
       return;
     }
 
+    const googleAnyCustomKeyword = target.getAttribute("data-google-any-custom-keyword");
+    if (googleAnyCustomKeyword) {
+      ensureSettingsShape(settings);
+      const selectedManual = new Set(normalizeGoogleAnyKeywords(settings.googleAnyPlatform.selectedManualKeywords));
+      if (target.checked) {
+        selectedManual.add(googleAnyCustomKeyword);
+      } else {
+        selectedManual.delete(googleAnyCustomKeyword);
+      }
+      settings.googleAnyPlatform.selectedManualKeywords = Array.from(selectedManual)
+        .filter((keyword) => settings.googleAnyPlatform.manualKeywords.includes(keyword));
+      queueAutosave();
+      renderGoogleAnyView();
+      return;
+    }
+
     if (target.name !== "enabled-engine" || editMode) {
       return;
     }
@@ -1642,6 +1880,12 @@ function bindEvents() {
       return;
     }
 
+    const infoModal = document.getElementById("google-any-info-modal");
+    if (infoModal instanceof HTMLElement && !infoModal.hidden && target === infoModal) {
+      closeGoogleAnyInfoModal();
+      return;
+    }
+
     const sharedRow = target.closest("[data-shared-key]");
     if (sharedRow instanceof HTMLElement) {
       const key = sharedRow.getAttribute("data-shared-key");
@@ -1660,6 +1904,19 @@ function bindEvents() {
       removeEngine(removeId, editDraft);
       render();
       queueAutosave();
+      return;
+    }
+
+    const keywordRemoveElement = target.closest("[data-google-any-pill-kind]");
+    const keywordKind = keywordRemoveElement && keywordRemoveElement.getAttribute("data-google-any-pill-kind");
+    const keywordValue = keywordRemoveElement && keywordRemoveElement.getAttribute("data-google-any-pill-value");
+    if (keywordKind && keywordValue) {
+      if (keywordKind === "source") {
+        removeGoogleAnySelectedSource(keywordValue);
+      } else {
+        removeGoogleAnyManualKeyword(keywordValue);
+      }
+      renderGoogleAnyView();
       return;
     }
 
@@ -1712,13 +1969,31 @@ function bindEvents() {
       return;
     }
 
-    if (button.id === "google-any-search-quick") {
+    if (button.id === "google-any-run-inline") {
       runGoogleAnySearch();
       return;
     }
 
-    if (button.id === "google-any-run-inline") {
-      runGoogleAnySearch();
+    if (button.id === "google-any-keywords-edit") {
+      googleAnyKeywordEditMode = !googleAnyKeywordEditMode;
+      renderGoogleAnyView();
+      return;
+    }
+
+    if (button.id === "google-any-keywords-reset") {
+      resetGoogleAnyKeywordsAndSources();
+      googleAnyKeywordsInputRaw = "";
+      renderGoogleAnyView();
+      return;
+    }
+
+    if (button.id === "google-any-info-open") {
+      openGoogleAnyInfoModal();
+      return;
+    }
+
+    if (button.id === "google-any-info-close") {
+      closeGoogleAnyInfoModal();
       return;
     }
 
@@ -1828,6 +2103,11 @@ function bindEvents() {
       const modal = document.getElementById("add-more-modal");
       if (modal instanceof HTMLElement && !modal.hidden) {
         closeAddMoreModal();
+        return;
+      }
+      const infoModal = document.getElementById("google-any-info-modal");
+      if (infoModal instanceof HTMLElement && !infoModal.hidden) {
+        closeGoogleAnyInfoModal();
       }
     }
   });
@@ -1966,7 +2246,8 @@ async function init() {
   ensureSettingsShape(settings);
   render();
   renderSettingsForm();
-  setActiveView("menu");
+  const persistedTopTab = await readPersistedTopTab();
+  setActiveView(persistedTopTab);
   syncViewHeight();
 }
 

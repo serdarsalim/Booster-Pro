@@ -249,10 +249,18 @@ export function buildGoogleAnyUrls(query, settings) {
     && Array.isArray(settings.googleAnyPlatform.manualKeywords)
     ? settings.googleAnyPlatform.manualKeywords
     : [];
+  const selectedManualKeywords = settings
+    && settings.googleAnyPlatform
+    && Array.isArray(settings.googleAnyPlatform.selectedManualKeywords)
+    ? settings.googleAnyPlatform.selectedManualKeywords
+    : manualKeywords;
+  const normalizedManualKeywords = normalizeGoogleAnyKeywords(manualKeywords);
+  const activeManualKeywords = normalizeGoogleAnyKeywords(selectedManualKeywords)
+    .filter((keyword) => normalizedManualKeywords.includes(keyword));
   const selectedSources = getGoogleAnySelectedSources(settings);
   const selectedKeywords = selectedSources.map((entry) => entry.name);
   const allKeywords = Array.from(new Set([
-    ...normalizeGoogleAnyKeywords(manualKeywords),
+    ...activeManualKeywords,
     ...selectedKeywords.map((value) => String(value || "").trim()).filter(Boolean)
   ]));
   const trimmedQuery = String(query || "").trim();
