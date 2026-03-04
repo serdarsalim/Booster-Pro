@@ -223,10 +223,11 @@ function formatKeywordToken(keyword) {
   if (!trimmed) {
     return "";
   }
-  if (/\s/.test(trimmed) && !/^".*"$/.test(trimmed)) {
-    return `"${trimmed}"`;
+  if (/^".*"$/.test(trimmed)) {
+    return trimmed;
   }
-  return trimmed;
+  const escaped = trimmed.replaceAll("\"", "\\\"");
+  return `"${escaped}"`;
 }
 
 function buildGoogleAnySingleQuery(query, keyword) {

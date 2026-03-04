@@ -461,26 +461,28 @@ function getEngineMap(targetSettings) {
 }
 
 function updateTopActionButtons() {
-  const startEditButton = document.getElementById("start-edit");
   const settingsButton = document.getElementById("open-settings");
   const googleAnyButton = document.getElementById("open-google-any");
   const listViewButton = document.getElementById("go-list-view");
 
-  if (!(startEditButton instanceof HTMLButtonElement)
-    || !(settingsButton instanceof HTMLButtonElement)
+  if (!(settingsButton instanceof HTMLButtonElement)
     || !(googleAnyButton instanceof HTMLButtonElement)
     || !(listViewButton instanceof HTMLButtonElement)) {
     return;
   }
 
-  startEditButton.hidden = activeView !== "menu";
   settingsButton.hidden = false;
   googleAnyButton.hidden = false;
-  startEditButton.setAttribute("aria-pressed", editMode ? "true" : "false");
-  startEditButton.title = editMode ? "Editing (click to exit)" : "Edit";
   settingsButton.setAttribute("aria-pressed", activeView === "settings" ? "true" : "false");
   googleAnyButton.setAttribute("aria-pressed", activeView === "google-any" ? "true" : "false");
   listViewButton.setAttribute("aria-pressed", activeView === "menu" ? "true" : "false");
+
+  const startEditButton = document.getElementById("start-edit");
+  if (startEditButton instanceof HTMLButtonElement) {
+    startEditButton.textContent = editMode ? "Done" : "Edit";
+    startEditButton.setAttribute("aria-pressed", editMode ? "true" : "false");
+    startEditButton.title = editMode ? "Done editing" : "Edit";
+  }
 }
 
 function setActiveView(viewId) {

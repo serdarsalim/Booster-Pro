@@ -271,7 +271,7 @@ button {
 
 #menu-view {
   gap: 8px;
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr) auto;
 }
 
 .page-view[hidden] {
@@ -328,6 +328,25 @@ button {
 
 .query-clear:hover {
   background: #eaf0fa;
+}
+
+.menu-edit-row {
+  display: flex;
+  justify-content: center;
+}
+
+.menu-edit-pill {
+  border-radius: 999px;
+  min-width: 120px;
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.menu-edit-pill[aria-pressed="true"] {
+  background: #fde3e3;
+  border-color: #e7aaaa;
+  color: #652828;
 }
 
 #google-any-run-inline {
@@ -1363,6 +1382,12 @@ body.theme-dark .top-action-text-btn[aria-pressed="true"] {
 body.theme-dark .top-action-text-btn:focus-visible {
   outline: 2px solid #a76666;
   outline-offset: 2px;
+}
+
+body.theme-dark .menu-edit-pill[aria-pressed="true"] {
+  background: #5a3030;
+  border-color: #915656;
+  color: #ffe4e4;
 }
 
 body.theme-dark .icon-ghost:hover,
