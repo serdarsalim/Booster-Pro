@@ -1,16 +1,22 @@
 # Searcher X
 
-Searcher X is a Chrome Manifest V3 extension for fast search from selected text and quick engine launching from a unified popup UI.
+Searcher X is a Chrome Manifest V3 extension built for fast multi-platform search directly from the app.
+
+Instead of opening tabs and typing each platform one by one, you enter a query once and run it across selected engines in one click.
 
 ## Core Features
-- Right-click context search across enabled engines
-- Popup command center for:
-  - query input and one-click engine search
-  - per-engine enable/disable
-  - edit mode (rename/delete engines and rename section headers)
-  - settings and shortcut access
-- Left-click quick search support for selected content
-- Built-in AI, web, research, social, productivity, and utilities engine groups
+- One-click multi-platform search directly from the app
+- Run one query across selected engines without tab-by-tab manual typing
+- Search with Google mode:
+  - combines your query with selected exact-match keywords
+  - supports multi-tab and one-tab methods
+- Supports AI-first and traditional web search engines
+- Editable engine names and section headers
+- Enable/disable engines with modern toggles
+- Built-in categories: AI, Web, Tech, Shopping, News, Research, Social, Productivity, Utilities
+- Optional standalone Searcher X window from toolbar icon
+- Quick access to Chrome tab keyboard shortcuts from Settings
+- Right-click text search in Chrome (included as secondary workflow)
 
 ## Default Starter Layout
 On fresh install/reset, the popup starts with 6 categories (3 engines each):
@@ -22,7 +28,7 @@ By default, only `AI`, `Social Media`, and `Utilities` engines are enabled.
 ## Project Structure
 - `background/` service worker, routing, context menus, commands, storage
 - `content/` in-page quick action menu
-- `ui/` command center HTML/CSS/JS
+- `ui/` app UI HTML/CSS/JS
 - `shared/` engine registry and settings sanitization
 
 ## Local Development
@@ -30,7 +36,7 @@ By default, only `AI`, `Social Media`, and `Utilities` engines are enabled.
 2. Enable **Developer mode**
 3. Click **Load unpacked**
 4. Select this folder:
-   - `/Users/slm/my-portfolio/booster pro`
+   - `/Users/slm/my-portfolio/search-x`
 5. Reload the extension after source changes
 
 ## Notes
