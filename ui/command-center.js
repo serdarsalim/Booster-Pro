@@ -143,6 +143,41 @@ function sendMessage(type, payload = {}) {
   });
 }
 
+function getCurrentExtensionTab() {
+  return new Promise((resolve) => {
+    try {
+      chrome.tabs.getCurrent((tab) => {
+        resolve(tab || null);
+      });
+    } catch (_error) {
+      resolve(null);
+    }
+  });
+}
+
+async function closeAttachedPopupIfNeeded() {
+  const currentTab = await getCurrentExtensionTab();
+  if (currentTab) {
+    return;
+  }
+  setTimeout(() => {
+    try {
+      window.close();
+    } catch (_error) {
+      // Ignore close failures.
+    }
+  }, 30);
+}
+
+async function updateStandaloneButtonVisibility() {
+  const standaloneButton = document.getElementById("open-standalone");
+  if (!(standaloneButton instanceof HTMLButtonElement)) {
+    return;
+  }
+  const currentTab = await getCurrentExtensionTab();
+  standaloneButton.hidden = Boolean(currentTab);
+}
+
 function deepClone(value) {
   return JSON.parse(JSON.stringify(value));
 }
@@ -549,7 +584,6 @@ function applyTheme(targetSettings) {
 
   const themeButton = document.getElementById("toggle-theme");
   if (themeButton instanceof HTMLButtonElement) {
-    themeButton.textContent = darkMode ? "\u2600" : "\u263D";
     themeButton.title = darkMode ? "Enable light mode" : "Enable dark mode";
     themeButton.setAttribute("aria-label", darkMode ? "Enable light mode" : "Enable dark mode");
     themeButton.setAttribute("aria-pressed", darkMode ? "true" : "false");
@@ -1891,7 +1925,7 @@ function bindEvents() {
 
   document.addEventListener("click", (event) => {
     const target = event.target;
-    if (!(target instanceof HTMLElement)) {
+    if (!(target instanceof Element)) {
       return;
     }
 
@@ -2027,6 +2061,17 @@ function bindEvents() {
       source.behavior.darkMode = !source.behavior.darkMode;
       applyTheme(source);
       queueAutosave();
+      return;
+    }
+
+    if (button.id === "open-standalone") {
+      Promise.all([flushAutosave(), persistCurrentQuery()])
+        .catch(() => undefined)
+        .finally(() => {
+          sendMessage("OPEN_COMMAND_CENTER_STANDALONE")
+            .then(() => closeAttachedPopupIfNeeded())
+            .catch(() => undefined);
+        });
       return;
     }
 
@@ -2236,6 +2281,7 @@ function bindEvents() {
 
 async function init() {
   bindEvents();
+  await updateStandaloneButtonVisibility();
 
   const queryInput = document.getElementById("query-input");
   if (queryInput instanceof HTMLInputElement) {

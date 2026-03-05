@@ -47,20 +47,24 @@ body {
 }
 
 .topbar {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  flex-wrap: nowrap;
   gap: 10px;
 }
 
-.top-actions {
+.top-actions-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  gap: 8px;
+}
+
+.top-actions-icons {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  flex-wrap: nowrap;
-  flex: 1 1 auto;
-  min-width: 0;
   gap: 8px;
 }
 
@@ -197,8 +201,20 @@ button {
   outline-offset: 2px;
 }
 
-.theme-toggle-btn {
-  font-size: 16px;
+.theme-toggle-btn .theme-icon {
+  display: none;
+}
+
+.theme-toggle-btn .theme-icon-moon {
+  display: block;
+}
+
+body.theme-dark .theme-toggle-btn .theme-icon-moon {
+  display: none;
+}
+
+body.theme-dark .theme-toggle-btn .theme-icon-sun {
+  display: block;
 }
 
 .primary {
@@ -1690,7 +1706,11 @@ body.theme-dark .engine-panel::-webkit-scrollbar-thumb {
     padding-left: 0;
   }
 
-  .top-actions {
+  .top-actions-center {
+    justify-content: center;
+  }
+
+  .top-actions-icons {
     justify-content: flex-end;
   }
 

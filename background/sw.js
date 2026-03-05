@@ -4,6 +4,7 @@ import { MENU_IDS, parseEngineIdFromMenu, rebuildContextMenus } from "./contextM
 import { buildGoogleAnySearchUrls, buildSearchUrls, openUrls } from "./router.js";
 
 const COMMAND_CENTER_POPUP_PATH = "ui/command-center.html";
+const OPEN_COMMAND_CENTER_STANDALONE_MESSAGE = "OPEN_COMMAND_CENTER_STANDALONE";
 
 function getQueryFromInfo(info) {
   return (info.selectionText || info.linkUrl || "").trim();
@@ -149,6 +150,12 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         query: message.query
       });
       sendResponse({ ok: true, result });
+      return;
+    }
+
+    if (message.type === OPEN_COMMAND_CENTER_STANDALONE_MESSAGE) {
+      await openCommandCenterStandaloneWindow();
+      sendResponse({ ok: true });
       return;
     }
 
