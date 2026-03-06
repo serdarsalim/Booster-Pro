@@ -1,7 +1,12 @@
 import { getSettings, saveSettings } from "./storage.js";
 import { handleCommand } from "./commands.js";
 import { MENU_IDS, parseEngineIdFromMenu, rebuildContextMenus } from "./contextMenus.js";
-import { buildGoogleAnySearchUrls, buildSearchUrls, openUrls } from "./router.js";
+import {
+  buildGoogleAnySearchUrls,
+  buildGoogleAnySingleKeywordSearchUrls,
+  buildSearchUrls,
+  openUrls
+} from "./router.js";
 
 const COMMAND_CENTER_POPUP_PATH = "ui/command-center.html";
 const OPEN_COMMAND_CENTER_STANDALONE_MESSAGE = "OPEN_COMMAND_CENTER_STANDALONE";
@@ -70,6 +75,20 @@ async function runGoogleAnySearch({ query }) {
   return {
     opened: entries.length,
     mode: settings && settings.googleAnyPlatform ? settings.googleAnyPlatform.mode : "combined"
+  };
+}
+
+async function runGoogleAnySingleKeywordSearch({ query, keyword }) {
+  if (!query || !query.trim() || !keyword || !keyword.trim()) {
+    return { opened: 0 };
+  }
+
+  const settings = await getSettings();
+  const entries = buildGoogleAnySingleKeywordSearchUrls(query, keyword);
+  await openUrls(entries, settings);
+
+  return {
+    opened: entries.length
   };
 }
 
@@ -148,6 +167,15 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     if (message.type === "RUN_GOOGLE_ANY") {
       const result = await runGoogleAnySearch({
         query: message.query
+      });
+      sendResponse({ ok: true, result });
+      return;
+    }
+
+    if (message.type === "RUN_GOOGLE_ANY_SINGLE_KEYWORD") {
+      const result = await runGoogleAnySingleKeywordSearch({
+        query: message.query,
+        keyword: message.keyword
       });
       sendResponse({ ok: true, result });
       return;

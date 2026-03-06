@@ -812,18 +812,18 @@ function renderGoogleAnyView() {
   } else {
     const selectedCustomItemsHtml = selectedManualKeywords
       .map((keyword) => `
-        <span class="google-any-source-chip google-any-custom-chip">
+        <button type="button" class="google-any-source-chip google-any-custom-chip google-any-source-chip-action" data-google-any-run-keyword="${escapeHtml(keyword)}" aria-label="Search only ${escapeHtml(keyword)} on Google" title="Search only ${escapeHtml(keyword)} on Google">
           <span class="google-any-source-name">${escapeHtml(keyword)}</span>
-        </span>
+        </button>
       `)
       .join("");
 
     const selectedSourceItemsHtml = filteredSources
       .filter((entry) => selectedIds.includes(entry.engineId))
       .map((entry) => `
-        <span class="google-any-source-chip">
+        <button type="button" class="google-any-source-chip google-any-source-chip-action" data-google-any-run-keyword="${escapeHtml(entry.name)}" aria-label="Search only ${escapeHtml(entry.name)} on Google" title="Search only ${escapeHtml(entry.name)} on Google">
           <span class="google-any-source-name">${escapeHtml(entry.name)}</span>
-        </span>
+        </button>
       `)
       .join("");
 
@@ -999,6 +999,37 @@ function runGoogleAnySearch() {
     .catch(() => undefined)
     .finally(() => {
       sendMessage("RUN_GOOGLE_ANY", { query }).catch(() => undefined);
+    });
+}
+
+function runGoogleAnySingleKeywordSearch(keyword) {
+  const normalizedKeyword = String(keyword || "").trim();
+  if (!normalizedKeyword) {
+    return;
+  }
+
+  const query = readMainQuery();
+  if (!query) {
+    const googleAnyQueryInput = document.getElementById("google-any-query-input");
+    if (activeView === "google-any" && googleAnyQueryInput instanceof HTMLInputElement) {
+      googleAnyQueryInput.focus();
+    } else {
+      const queryInput = document.getElementById("query-input");
+      if (queryInput instanceof HTMLInputElement) {
+        queryInput.focus();
+      }
+    }
+    showToast("Enter a query first.");
+    return;
+  }
+
+  flushAutosave()
+    .catch(() => undefined)
+    .finally(() => {
+      sendMessage("RUN_GOOGLE_ANY_SINGLE_KEYWORD", {
+        query,
+        keyword: normalizedKeyword
+      }).catch(() => undefined);
     });
 }
 
@@ -2010,6 +2041,16 @@ function bindEvents() {
         removeGoogleAnyManualKeyword(keywordValue);
       }
       renderGoogleAnyView();
+      return;
+    }
+
+    const singleKeywordElement = target.closest("[data-google-any-run-keyword]");
+    const singleKeyword = singleKeywordElement && singleKeywordElement.getAttribute("data-google-any-run-keyword");
+    if (singleKeyword) {
+      if (googleAnyKeywordEditMode) {
+        return;
+      }
+      runGoogleAnySingleKeywordSearch(singleKeyword);
       return;
     }
 

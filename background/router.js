@@ -14,6 +14,17 @@ export function buildGoogleAnySearchUrls(query, settings) {
   }));
 }
 
+export function buildGoogleAnySingleKeywordSearchUrls(query, keyword) {
+  const trimmedQuery = String(query || "").trim();
+  const trimmedKeyword = String(keyword || "").trim();
+  if (!trimmedQuery || !trimmedKeyword) {
+    return [];
+  }
+  const searchQuery = `${trimmedQuery} "${trimmedKeyword.replaceAll("\"", "\\\"")}"`;
+  const url = `https://www.google.com/search?q=${encodeURIComponent(searchQuery)}`;
+  return [{ engineId: "google-any-single", url }];
+}
+
 export async function openUrls(entries, settings) {
   if (!entries.length) {
     return;
