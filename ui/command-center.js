@@ -93,8 +93,10 @@ let querySelectOnFocusArmed = true;
 let activeView = "menu";
 let editMode = false;
 let editDraft = null;
-let googleAnyKeywordsInputRaw = "";
 let googleAnyKeywordEditMode = false;
+let googleAnyAddKeywordMode = false;
+let googleAnyAddKeywordDraft = "";
+let suppressGoogleAnyAddBlurCommit = false;
 
 let activeAddSectionId = null;
 let sharedCatalog = [];
@@ -728,16 +730,6 @@ function renderGoogleAnyView() {
   }
   renderGoogleAnyModeHelp(currentSettings.googleAnyPlatform.mode, selectedKeywordCount);
 
-  const keywordsInput = document.getElementById("google-any-keywords-input");
-  if (keywordsInput instanceof HTMLInputElement) {
-    if (document.activeElement === keywordsInput && !googleAnyKeywordsInputRaw) {
-      googleAnyKeywordsInputRaw = keywordsInput.value;
-    }
-    if (document.activeElement !== keywordsInput) {
-      keywordsInput.value = googleAnyKeywordsInputRaw;
-    }
-  }
-
   const keywordEditButton = document.getElementById("google-any-keywords-edit");
   if (keywordEditButton instanceof HTMLButtonElement) {
     keywordEditButton.setAttribute("aria-pressed", googleAnyKeywordEditMode ? "true" : "false");
@@ -835,15 +827,40 @@ function renderGoogleAnyView() {
     }
   }
 
+  const addKeywordControlHtml = googleAnyAddKeywordMode
+    ? `
+      <span class="google-any-source-chip google-any-custom-chip google-any-add-pill google-any-add-pill-input-wrap">
+        <input
+          id="google-any-add-pill-input"
+          class="google-any-add-pill-input"
+          type="text"
+          value="${escapeHtml(googleAnyAddKeywordDraft)}"
+          placeholder="Add keyword"
+          aria-label="Add keyword"
+        >
+      </span>
+    `
+    : "<button id=\"google-any-add-pill-trigger\" class=\"google-any-source-chip google-any-add-pill\" type=\"button\" aria-label=\"Add keyword\">+ Add keyword</button>";
+
   if (sourceList instanceof HTMLElement) {
     sourceList.innerHTML = `
       <div class="google-any-engine-chip-wrap">
         ${customItemsHtml}
         ${sourceItemsHtml}
+        ${addKeywordControlHtml}
         ${resetButtonHtml}
       </div>
     `;
     sourceList.scrollTop = sourceListScrollTop;
+  }
+
+  if (googleAnyAddKeywordMode) {
+    const addKeywordInput = document.getElementById("google-any-add-pill-input");
+    if (addKeywordInput instanceof HTMLInputElement && document.activeElement !== addKeywordInput) {
+      addKeywordInput.focus();
+      const caret = addKeywordInput.value.length;
+      addKeywordInput.setSelectionRange(caret, caret);
+    }
   }
 
 }
@@ -1735,7 +1752,6 @@ function clearDropTargets() {
 function bindEvents() {
   const queryInput = document.getElementById("query-input");
   const googleAnyQueryInput = document.getElementById("google-any-query-input");
-  const googleAnyKeywordsInput = document.getElementById("google-any-keywords-input");
   const clearButton = document.getElementById("clear-query");
   const openInBackgroundInput = document.getElementById("setting-open-background");
   const openNextInput = document.getElementById("setting-open-next");
@@ -1771,18 +1787,6 @@ function bindEvents() {
       }
       event.preventDefault();
       runGoogleAnySearch();
-    });
-  }
-
-  if (googleAnyKeywordsInput instanceof HTMLInputElement) {
-    googleAnyKeywordsInput.addEventListener("keydown", (event) => {
-      if (event.key !== "Enter") {
-        return;
-      }
-      event.preventDefault();
-      googleAnyKeywordsInput.value = addGoogleAnyManualKeywordsFromInput(googleAnyKeywordsInput.value, true);
-      googleAnyKeywordsInputRaw = googleAnyKeywordsInput.value;
-      renderGoogleAnyView();
     });
   }
 
@@ -1829,6 +1833,52 @@ function bindEvents() {
     });
   }
 
+  document.addEventListener("keydown", (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLInputElement) || target.id !== "google-any-add-pill-input") {
+      return;
+    }
+
+    if (event.key === "Escape") {
+      event.preventDefault();
+      suppressGoogleAnyAddBlurCommit = true;
+      googleAnyAddKeywordDraft = "";
+      googleAnyAddKeywordMode = false;
+      renderGoogleAnyView();
+      return;
+    }
+
+    if (event.key !== "Enter") {
+      return;
+    }
+
+    event.preventDefault();
+    googleAnyAddKeywordDraft = target.value;
+    addGoogleAnyManualKeywordsFromInput(googleAnyAddKeywordDraft, true);
+    suppressGoogleAnyAddBlurCommit = true;
+    googleAnyAddKeywordDraft = "";
+    googleAnyAddKeywordMode = true;
+    renderGoogleAnyView();
+  });
+
+  document.addEventListener("blur", (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLInputElement) || target.id !== "google-any-add-pill-input") {
+      return;
+    }
+
+    if (suppressGoogleAnyAddBlurCommit) {
+      suppressGoogleAnyAddBlurCommit = false;
+      return;
+    }
+
+    googleAnyAddKeywordDraft = target.value;
+    addGoogleAnyManualKeywordsFromInput(googleAnyAddKeywordDraft, true);
+    googleAnyAddKeywordDraft = "";
+    googleAnyAddKeywordMode = false;
+    renderGoogleAnyView();
+  }, true);
+
   document.addEventListener("input", (event) => {
     const target = event.target;
     if (!(target instanceof HTMLElement)) {
@@ -1854,16 +1904,13 @@ function bindEvents() {
       return;
     }
 
-    if (target.id === "google-any-keywords-input" && target instanceof HTMLInputElement) {
-      if (!settings) {
-        return;
-      }
-      googleAnyKeywordsInputRaw = target.value;
+    if (target.id === "google-any-add-pill-input" && target instanceof HTMLInputElement) {
+      googleAnyAddKeywordDraft = target.value;
       if (!target.value.includes(",")) {
         return;
       }
-      target.value = addGoogleAnyManualKeywordsFromInput(target.value, false);
-      googleAnyKeywordsInputRaw = target.value;
+      googleAnyAddKeywordDraft = addGoogleAnyManualKeywordsFromInput(target.value, false);
+      googleAnyAddKeywordMode = true;
       renderGoogleAnyView();
       return;
     }
@@ -1901,16 +1948,6 @@ function bindEvents() {
   document.addEventListener("change", (event) => {
     const target = event.target;
     if (!(target instanceof HTMLInputElement) && !(target instanceof HTMLTextAreaElement)) {
-      return;
-    }
-    if (target.id === "google-any-keywords-input") {
-      if (target instanceof HTMLInputElement) {
-        target.value = addGoogleAnyManualKeywordsFromInput(target.value, true);
-        googleAnyKeywordsInputRaw = target.value;
-      } else {
-        googleAnyKeywordsInputRaw = "";
-      }
-      renderGoogleAnyView();
       return;
     }
     if (target.id === "import-engine-file") {
@@ -2108,6 +2145,13 @@ function bindEvents() {
       return;
     }
 
+    if (button.id === "google-any-add-pill-trigger") {
+      googleAnyAddKeywordMode = true;
+      googleAnyAddKeywordDraft = "";
+      renderGoogleAnyView();
+      return;
+    }
+
     if (button.id === "google-any-keywords-edit") {
       googleAnyKeywordEditMode = !googleAnyKeywordEditMode;
       renderGoogleAnyView();
@@ -2116,7 +2160,8 @@ function bindEvents() {
 
     if (button.id === "google-any-keywords-reset") {
       resetGoogleAnyKeywordsAndSources();
-      googleAnyKeywordsInputRaw = "";
+      googleAnyAddKeywordDraft = "";
+      googleAnyAddKeywordMode = false;
       renderGoogleAnyView();
       return;
     }
