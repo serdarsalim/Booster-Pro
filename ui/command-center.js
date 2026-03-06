@@ -2211,11 +2211,6 @@ function bindEvents() {
       return;
     }
 
-    if (button.id === "go-home-title") {
-      setActiveView("menu");
-      return;
-    }
-
     if (button.id === "go-list-view") {
       if (editMode) {
         exitEditMode();
