@@ -293,6 +293,11 @@ body.theme-dark .theme-toggle-btn .theme-icon-sun {
   grid-template-rows: auto minmax(0, 1fr) auto;
 }
 
+#menu-view .engine-panel {
+  border: none;
+  background: transparent;
+}
+
 #google-any-view {
   gap: 8px;
   grid-template-rows: auto minmax(0, 1fr);
