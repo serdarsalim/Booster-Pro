@@ -436,10 +436,11 @@ body.theme-dark .theme-toggle-btn .theme-icon-sun {
 
 .category-title {
   margin: 0;
+  padding-left: 22px;
   font-size: 13px;
   line-height: 1.2;
   font-weight: 700;
-  color: #445676;
+  color: #7a4a4a;
   letter-spacing: 0.01em;
 }
 
@@ -511,7 +512,7 @@ body.theme-dark .theme-toggle-btn .theme-icon-sun {
   font-size: 13px;
   line-height: 1.2;
   font-weight: 700;
-  color: #445676;
+  color: #7a4a4a;
   letter-spacing: 0.01em;
 }
 
@@ -536,6 +537,12 @@ body.theme-dark .theme-toggle-btn .theme-icon-sun {
   column-gap: 6px;
   min-width: 0;
   width: 100%;
+}
+
+.engine-leading-spacer {
+  width: 22px;
+  height: 1px;
+  display: block;
 }
 
 .engine-visibility {
@@ -613,6 +620,10 @@ body.theme-dark .theme-toggle-btn .theme-icon-sun {
   min-width: 0;
   width: auto;
   flex: 1 1 auto;
+}
+
+.engine-visibility-edit {
+  margin-left: auto;
 }
 
 .engine-switch {
@@ -706,7 +717,7 @@ body.theme-dark .theme-toggle-btn .theme-icon-sun {
   color: var(--muted);
   border-radius: 8px;
   padding: 2px 5px;
-  margin-left: auto;
+  margin-left: 0;
   flex: 0 0 auto;
   display: none;
 }

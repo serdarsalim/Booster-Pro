@@ -1123,6 +1123,11 @@ function assignEngineToSection(targetSettings, sectionId, engineId, beforeEngine
 }
 
 function renderEngineItem(engine, enabledSet) {
+  const checked = enabledSet.has(engine.id) ? "checked" : "";
+  const visibilityLabel = checked
+    ? "Hide from right-click menu"
+    : "Show in right-click menu";
+
   if (editMode) {
     return `
       <div class="engine-item engine-item-edit" draggable="true" data-drag-engine-id="${escapeHtml(engine.id)}" data-section-id="${escapeHtml(engine.sectionId)}">
@@ -1136,22 +1141,19 @@ function renderEngineItem(engine, enabledSet) {
             aria-label="Rename ${escapeHtml(engine.name)} engine"
           >
         </span>
+        <label class="engine-visibility engine-visibility-edit" aria-label="${escapeHtml(visibilityLabel)}" title="${escapeHtml(visibilityLabel)}">
+          <input class="engine-visibility-input" type="checkbox" name="enabled-engine" value="${escapeHtml(engine.id)}" ${checked}>
+          <span class="engine-visibility-icon" aria-hidden="true"></span>
+        </label>
         <button type="button" class="remove-btn remove-btn-edit" data-remove-id="${escapeHtml(engine.id)}" aria-label="Remove engine">&times;</button>
       </div>
     `;
   }
 
-  const checked = enabledSet.has(engine.id) ? "checked" : "";
-  const visibilityLabel = checked
-    ? "Hide from right-click menu"
-    : "Show in right-click menu";
   return `
     <div class="engine-item">
       <span class="engine-main">
-        <label class="engine-visibility" aria-label="${escapeHtml(visibilityLabel)}" title="${escapeHtml(visibilityLabel)}">
-          <input class="engine-visibility-input" type="checkbox" name="enabled-engine" value="${escapeHtml(engine.id)}" ${checked}>
-          <span class="engine-visibility-icon" aria-hidden="true"></span>
-        </label>
+        <span class="engine-leading-spacer" aria-hidden="true"></span>
         <button type="button" class="search-btn" data-search-id="${escapeHtml(engine.id)}">${escapeHtml(engine.name)}</button>
       </span>
     </div>
@@ -1201,6 +1203,7 @@ function renderSection(section, engineMap, enabledSet) {
     : `
       <div class="engine-item category-inline-item">
         <span class="engine-main">
+          <span class="engine-leading-spacer" aria-hidden="true"></span>
           <span class="category-inline-title">${escapeHtml(section.name)}</span>
         </span>
       </div>
@@ -1909,18 +1912,25 @@ function bindEvents() {
       return;
     }
 
-    if (target.name !== "enabled-engine" || editMode) {
+    if (target.name !== "enabled-engine") {
       return;
     }
 
-    const enabled = new Set(settings.enabledEngineIds || []);
+    const source = editMode && editDraft ? editDraft : settings;
+    if (!source) {
+      return;
+    }
+
+    const enabled = new Set(source.enabledEngineIds || []);
     if (target.checked) {
       enabled.add(target.value);
     } else {
       enabled.delete(target.value);
     }
-    settings.enabledEngineIds = Array.from(enabled);
-    queueAutosave();
+    source.enabledEngineIds = Array.from(enabled);
+    if (!editMode) {
+      queueAutosave();
+    }
   });
 
   document.addEventListener("click", (event) => {
