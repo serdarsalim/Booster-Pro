@@ -316,6 +316,10 @@ body.theme-dark .theme-toggle-btn .theme-icon-sun {
   display: none;
 }
 
+.is-edit-mode #menu-view {
+  grid-template-rows: minmax(0, 1fr) auto;
+}
+
 .query-input-wrap {
   position: relative;
 }
@@ -367,6 +371,14 @@ body.theme-dark .theme-toggle-btn .theme-icon-sun {
 .menu-edit-row {
   display: flex;
   justify-content: center;
+  flex-shrink: 0;
+}
+
+.is-edit-mode .menu-edit-row {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  padding-bottom: 4px;
 }
 
 .menu-edit-pill {
