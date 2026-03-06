@@ -127,14 +127,19 @@ button {
   padding: 0;
   font-size: 18px;
   line-height: 1;
+  border: none;
+  background: var(--bg);
   color: #2e3f5d;
-  transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease;
+  transition: background-color 140ms ease, color 140ms ease;
 }
 
 .icon-btn:hover {
-  background: #edf4ff;
-  border-color: #b8cae6;
+  background: #feecec;
   color: #1f4f98;
+}
+
+.ghost.icon-btn {
+  background: var(--bg);
 }
 
 .icon-btn:focus-visible {
@@ -178,21 +183,19 @@ button {
   font-weight: 700;
   letter-spacing: 0.2px;
   white-space: nowrap;
-  background: #fff7f7;
-  border-color: #f2d7d7;
+  background: #fff4f4;
+  border: none;
   color: #7a3f3f;
-  transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease;
+  transition: background-color 140ms ease, color 140ms ease;
 }
 
 .top-action-text-btn:hover {
-  background: #feecec;
-  border-color: #efc2c2;
+  background: #fff9f9;
   color: #6e3232;
 }
 
 .top-action-text-btn[aria-pressed="true"] {
   background: #fde3e3;
-  border-color: #e7aaaa;
   color: #652828;
 }
 
