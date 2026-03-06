@@ -303,6 +303,11 @@ body.theme-dark .theme-toggle-btn .theme-icon-sun {
   grid-template-rows: auto minmax(0, 1fr);
 }
 
+#google-any-view .engine-panel {
+  border: none;
+  background: transparent;
+}
+
 .page-view[hidden] {
   display: none !important;
 }
@@ -980,9 +985,9 @@ body.theme-dark .theme-toggle-btn .theme-icon-sun {
 
 .google-any-inline-row {
   display: grid;
-  grid-template-columns: 210px minmax(0, 1fr);
-  align-items: center;
-  column-gap: 10px;
+  grid-template-columns: minmax(0, 1fr);
+  row-gap: 8px;
+  align-items: start;
 }
 
 .google-any-field-title {
@@ -1005,6 +1010,10 @@ body.theme-dark .theme-toggle-btn .theme-icon-sun {
 
 .google-any-platforms-block {
   grid-template-columns: minmax(0, 1fr);
+}
+
+.google-any-platforms-block > .google-any-block-body {
+  gap: 12px;
 }
 
 .google-any-mode-row {
