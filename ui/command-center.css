@@ -1155,7 +1155,7 @@ body.theme-dark .theme-toggle-btn .theme-icon-sun {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  border: 1px solid #d6e2f3;
+  border: none;
   border-radius: 999px;
   background: #f8fbff;
   padding: 4px 8px;
@@ -1232,7 +1232,7 @@ body.theme-dark .theme-toggle-btn .theme-icon-sun {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  border: 1px solid #d6e2f3;
+  border: none;
   border-radius: 999px;
   background: #f8fbff;
   padding: 4px 8px;

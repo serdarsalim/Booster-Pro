@@ -748,10 +748,17 @@ function renderGoogleAnyView() {
     .slice()
     .sort((a, b) => a.name.localeCompare(b.name));
 
-  const customItemsHtml = manualKeywords
-    .map((keyword) => {
-      const removeButton = googleAnyKeywordEditMode
-        ? `
+  const resetButtonHtml = googleAnyKeywordEditMode
+    ? "<button id=\"google-any-keywords-reset\" class=\"google-any-keyword-reset-btn google-any-keyword-reset-inline\" type=\"button\">Reset keywords</button>"
+    : "";
+
+  let customItemsHtml = "";
+  let sourceItemsHtml = "";
+
+  if (googleAnyKeywordEditMode) {
+    customItemsHtml = manualKeywords
+      .map((keyword) => {
+        const removeButton = `
           <button
             type="button"
             class="google-any-keyword-pill-remove"
@@ -760,52 +767,73 @@ function renderGoogleAnyView() {
             aria-label="Remove ${escapeHtml(keyword)}"
             title="Remove ${escapeHtml(keyword)}"
           >&times;</button>
-        `
-        : "";
-      return `
-        <span class="google-any-chip-row">
-          <label class="google-any-source-chip google-any-custom-chip">
-            <input
-              type="checkbox"
-              data-google-any-custom-keyword="${escapeHtml(keyword)}"
-              ${selectedManualKeywords.includes(keyword) ? "checked" : ""}
-            >
-            <span class="google-any-source-name">${escapeHtml(keyword)}</span>
-          </label>
-          ${removeButton}
-        </span>
-      `;
-    }).join("");
+        `;
+        return `
+          <span class="google-any-chip-row">
+            <label class="google-any-source-chip google-any-custom-chip">
+              <input
+                type="checkbox"
+                data-google-any-custom-keyword="${escapeHtml(keyword)}"
+                ${selectedManualKeywords.includes(keyword) ? "checked" : ""}
+              >
+              <span class="google-any-source-name">${escapeHtml(keyword)}</span>
+            </label>
+            ${removeButton}
+          </span>
+        `;
+      }).join("");
 
-  const resetButtonHtml = googleAnyKeywordEditMode
-    ? "<button id=\"google-any-keywords-reset\" class=\"google-any-keyword-reset-btn google-any-keyword-reset-inline\" type=\"button\">Reset keywords</button>"
-    : "";
-  const sourceItemsHtml = filteredSources.length
-    ? filteredSources.map((entry) => {
-      const checked = selectedIds.includes(entry.engineId) ? "checked" : "";
-      const removeButton = googleAnyKeywordEditMode && checked
-        ? `
-          <button
-            type="button"
-            class="google-any-keyword-pill-remove"
-            data-google-any-pill-kind="source"
-            data-google-any-pill-value="${escapeHtml(entry.engineId)}"
-            aria-label="Remove ${escapeHtml(entry.name)}"
-            title="Remove ${escapeHtml(entry.name)}"
-          >&times;</button>
-        `
-        : "";
-      return `
-        <span class="google-any-chip-row">
-          <label class="google-any-source-chip">
-            <input type="checkbox" data-google-any-source-id="${escapeHtml(entry.engineId)}" ${checked}>
-            <span class="google-any-source-name">${escapeHtml(entry.name)}</span>
-          </label>
-          ${removeButton}
+    sourceItemsHtml = filteredSources.length
+      ? filteredSources.map((entry) => {
+        const checked = selectedIds.includes(entry.engineId) ? "checked" : "";
+        const removeButton = checked
+          ? `
+            <button
+              type="button"
+              class="google-any-keyword-pill-remove"
+              data-google-any-pill-kind="source"
+              data-google-any-pill-value="${escapeHtml(entry.engineId)}"
+              aria-label="Remove ${escapeHtml(entry.name)}"
+              title="Remove ${escapeHtml(entry.name)}"
+            >&times;</button>
+          `
+          : "";
+        return `
+          <span class="google-any-chip-row">
+            <label class="google-any-source-chip">
+              <input type="checkbox" data-google-any-source-id="${escapeHtml(entry.engineId)}" ${checked}>
+              <span class="google-any-source-name">${escapeHtml(entry.name)}</span>
+            </label>
+            ${removeButton}
+          </span>
+        `;
+      }).join("")
+      : "<div class=\"google-any-empty\">No engines match your search.</div>";
+  } else {
+    const selectedCustomItemsHtml = selectedManualKeywords
+      .map((keyword) => `
+        <span class="google-any-source-chip google-any-custom-chip">
+          <span class="google-any-source-name">${escapeHtml(keyword)}</span>
         </span>
-      `;
-    }).join("")
-    : "<div class=\"google-any-empty\">No engines match your search.</div>";
+      `)
+      .join("");
+
+    const selectedSourceItemsHtml = filteredSources
+      .filter((entry) => selectedIds.includes(entry.engineId))
+      .map((entry) => `
+        <span class="google-any-source-chip">
+          <span class="google-any-source-name">${escapeHtml(entry.name)}</span>
+        </span>
+      `)
+      .join("");
+
+    customItemsHtml = selectedCustomItemsHtml;
+    sourceItemsHtml = selectedSourceItemsHtml;
+
+    if (!customItemsHtml && !sourceItemsHtml) {
+      sourceItemsHtml = "<div class=\"google-any-empty\">No keywords selected. Click Edit to choose keywords.</div>";
+    }
+  }
 
   if (sourceList instanceof HTMLElement) {
     sourceList.innerHTML = `
