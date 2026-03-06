@@ -369,18 +369,17 @@ body.theme-dark .theme-toggle-btn .theme-icon-sun {
 }
 
 #google-any-run-inline {
-  background: linear-gradient(135deg, #a855f7 0%, #7c3aed 45%, #4f46e5 100%);
-  border-color: #6d28d9;
-  color: #ffffff;
+  background: #f6e8e8;
+  color: #6a3a3a;
 }
 
 #google-any-run-inline:hover {
-  background: linear-gradient(135deg, #b26bfa 0%, #8b5cf6 45%, #6366f1 100%);
-  border-color: #7c3aed;
+  background: #f6e8e8;
+  color: #6a3a3a;
 }
 
 #google-any-run-inline:focus-visible {
-  outline: 2px solid #c4b5fd;
+  outline: 2px solid #e4aaaa;
   outline-offset: 2px;
 }
 
@@ -895,13 +894,15 @@ body.theme-dark .theme-toggle-btn .theme-icon-sun {
 
 .google-any-panel {
   display: grid;
-  gap: 12px;
+  gap: 10px;
   align-content: start;
 }
 
 .google-any-query-row {
   display: grid;
-  gap: 6px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
 }
 
 .google-any-query-label {
@@ -930,10 +931,6 @@ body.theme-dark .theme-toggle-btn .theme-icon-sun {
   margin: 0;
   color: #5a6a83;
   font-size: 12px;
-}
-
-#google-any-mode-help {
-  text-align: right;
 }
 
 .google-any-block {
@@ -981,43 +978,48 @@ body.theme-dark .theme-toggle-btn .theme-icon-sun {
   padding: 0;
 }
 
+.google-any-mode-block .google-any-block-body {
+  gap: 4px;
+}
+
 .google-any-platforms-block {
   grid-template-columns: minmax(0, 1fr);
 }
 
 .google-any-mode-row {
   display: grid;
-  grid-template-columns: 250px minmax(0, 1fr);
-  align-items: center;
-  column-gap: 10px;
+  grid-template-columns: minmax(0, 1fr);
+  row-gap: 8px;
+  align-items: start;
 }
 
 .google-any-mode-label {
   margin: 0;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
   color: #445676;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+  white-space: nowrap;
 }
 
 .google-any-info-btn {
-  border: 1px solid #c8d8ef;
-  background: #f2f7ff;
+  border: 1px solid #d8e3f2;
+  background: #f8fbff;
   color: #3b5685;
   border-radius: 999px;
-  width: 22px;
-  height: 22px;
+  width: 18px;
+  height: 18px;
   padding: 0;
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 700;
   line-height: 1;
 }
 
 .google-any-info-btn:hover {
-  background: #e5efff;
-  border-color: #b8cdec;
+  background: #eef4fd;
+  border-color: #c7d7ec;
 }
 
 .google-any-info-btn:focus-visible {
@@ -1027,12 +1029,15 @@ body.theme-dark .theme-toggle-btn .theme-icon-sun {
 
 .google-any-mode-toggle {
   display: flex;
-  gap: 6px;
+  gap: 4px;
+  justify-content: flex-start;
+  width: fit-content;
+  max-width: 100%;
 }
 
 .google-any-mode-option {
-  flex: 1 1 0;
-  min-width: 0;
+  flex: 0 0 auto;
+  min-width: 150px;
 }
 
 .google-any-mode-option input {
@@ -1048,10 +1053,10 @@ body.theme-dark .theme-toggle-btn .theme-icon-sun {
   width: 100%;
   border: 1px solid var(--line);
   border-radius: 9px;
-  padding: 7px 10px;
+  padding: 6px 10px;
   background: #fff;
   color: #334865;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   cursor: pointer;
   user-select: none;
@@ -1067,6 +1072,13 @@ body.theme-dark .theme-toggle-btn .theme-icon-sun {
 .google-any-mode-option input:focus-visible + span {
   outline: 2px solid #9eb7df;
   outline-offset: 2px;
+}
+
+#google-any-mode-help {
+  text-align: left;
+  font-size: 11px;
+  line-height: 1.35;
+  margin-left: 0;
 }
 
 .google-any-block input[type="text"],
@@ -1207,15 +1219,11 @@ body.theme-dark .theme-toggle-btn .theme-icon-sun {
 }
 
 .google-any-run-inline-btn {
-  justify-self: center;
-  min-width: 170px;
-}
-
-.google-any-run-wrap {
-  display: grid;
-  justify-items: center;
-  gap: 6px;
-  margin-top: -2px;
+  justify-self: end;
+  min-width: 156px;
+  min-height: 40px;
+  padding: 0 16px;
+  border-radius: 12px;
 }
 
 .modal-backdrop {
@@ -1419,13 +1427,13 @@ body.theme-dark .icon-btn:hover {
 }
 
 body.theme-dark #google-any-run-inline {
-  background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 48%, #6366f1 100%);
-  border-color: #8b5cf6;
+  background: #4f3b3b;
+  color: #f7e9e9;
 }
 
 body.theme-dark #google-any-run-inline:hover {
-  background: linear-gradient(135deg, #b29dff 0%, #9b75ff 48%, #7a7dff 100%);
-  border-color: #9b75ff;
+  background: #4f3b3b;
+  color: #f7e9e9;
 }
 
 body.theme-dark .google-any-query-input {
@@ -1745,6 +1753,10 @@ body.theme-dark .engine-panel::-webkit-scrollbar-thumb {
   .google-any-inline-row {
     grid-template-columns: minmax(0, 1fr);
     row-gap: 6px;
+  }
+
+  .google-any-query-row {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .google-any-mode-row {

@@ -613,16 +613,16 @@ function renderGoogleAnyModeHelp(mode, selectedCount) {
   }
 
   if (selectedCount <= 0) {
-    help.textContent = "Select at least one website keyword to run Search with Google.";
+    help.textContent = "Select at least one keyword to run the search.";
     return;
   }
 
   if (mode === GOOGLE_ANY_MODE.SEPARATE) {
-    help.textContent = `Multi tab: opens ${selectedCount} Google tabs, one per selected website keyword.`;
+    help.textContent = `${selectedCount} Google tabs, one per selected keyword.`;
     return;
   }
 
-  help.textContent = "One tab: opens 1 Google tab with all selected website keywords combined.";
+  help.textContent = "One Google tab with all selected keywords combined.";
 }
 
 function addGoogleAnyManualKeywordsFromInput(rawValue, includeTrailingToken = false) {
