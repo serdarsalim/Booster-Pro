@@ -707,6 +707,7 @@ function renderGoogleAnyView() {
       googleAnyQueryInput.value = queryInput.value;
     }
   }
+  updateQueryControls();
 
   const sources = getGoogleAnyVisibleSources(currentSettings);
   const selectedIds = currentSettings.googleAnyPlatform.selectedEngineIds;

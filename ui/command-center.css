@@ -1177,7 +1177,7 @@ body.theme-dark .theme-toggle-btn .theme-icon-sun {
 }
 
 .google-any-source-list {
-  border: 1px solid var(--line);
+  border: none;
   border-radius: 8px;
   background: #fff;
   max-height: 182px;
@@ -1637,7 +1637,6 @@ body.theme-dark .shared-engine-table td {
 
 body.theme-dark .google-any-source-list {
   background: #141f33;
-  border-color: #31445f;
 }
 
 body.theme-dark .google-any-source-chip {
