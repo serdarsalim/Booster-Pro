@@ -240,10 +240,15 @@ function writePersistedTopTab(viewId) {
 function updateQueryControls() {
   const queryInput = document.getElementById("query-input");
   const clearButton = document.getElementById("clear-query");
+  const googleAnyQueryInput = document.getElementById("google-any-query-input");
+  const googleAnyClearButton = document.getElementById("clear-google-any-query");
   if (!(queryInput instanceof HTMLInputElement) || !(clearButton instanceof HTMLButtonElement)) {
     return;
   }
   clearButton.hidden = queryInput.value.length === 0;
+  if (googleAnyQueryInput instanceof HTMLInputElement && googleAnyClearButton instanceof HTMLButtonElement) {
+    googleAnyClearButton.hidden = googleAnyQueryInput.value.length === 0;
+  }
 }
 
 function persistCurrentQuery() {
@@ -608,23 +613,19 @@ function getGoogleAnyVisibleSources(currentSettings) {
     ));
 }
 
-function renderGoogleAnyModeHelp(mode, selectedCount) {
+function renderGoogleAnyModeHelp(selectedCount) {
   const help = document.getElementById("google-any-mode-help");
   if (!(help instanceof HTMLElement)) {
     return;
   }
 
   if (selectedCount <= 0) {
-    help.textContent = "Select at least one keyword to run the search.";
+    help.textContent = "Searching 0 keywords.";
     return;
   }
 
-  if (mode === GOOGLE_ANY_MODE.SEPARATE) {
-    help.textContent = `${selectedCount} Google tabs, one per selected keyword.`;
-    return;
-  }
-
-  help.textContent = "One Google tab with all selected keywords combined.";
+  const keywordLabel = selectedCount === 1 ? "keyword" : "keywords";
+  help.textContent = `Searching ${selectedCount} ${keywordLabel}.`;
 }
 
 function addGoogleAnyManualKeywordsFromInput(rawValue, includeTrailingToken = false) {
@@ -723,13 +724,12 @@ function renderGoogleAnyView() {
   const modeCombined = document.querySelector("input[name=\"google-any-mode\"][value=\"combined\"]");
   const modeSeparate = document.querySelector("input[name=\"google-any-mode\"][value=\"separate\"]");
   if (modeCombined instanceof HTMLInputElement) {
-    modeCombined.checked = currentSettings.googleAnyPlatform.mode === GOOGLE_ANY_MODE.COMBINED;
+    modeCombined.checked = false;
   }
   if (modeSeparate instanceof HTMLInputElement) {
-    modeSeparate.checked = currentSettings.googleAnyPlatform.mode === GOOGLE_ANY_MODE.SEPARATE;
+    modeSeparate.checked = false;
   }
-  renderGoogleAnyModeHelp(currentSettings.googleAnyPlatform.mode, selectedKeywordCount);
-
+  renderGoogleAnyModeHelp(selectedKeywordCount);
   const keywordEditButton = document.getElementById("google-any-keywords-edit");
   if (keywordEditButton instanceof HTMLButtonElement) {
     keywordEditButton.setAttribute("aria-pressed", googleAnyKeywordEditMode ? "true" : "false");
@@ -1753,6 +1753,7 @@ function bindEvents() {
   const queryInput = document.getElementById("query-input");
   const googleAnyQueryInput = document.getElementById("google-any-query-input");
   const clearButton = document.getElementById("clear-query");
+  const googleAnyClearButton = document.getElementById("clear-google-any-query");
   const openInBackgroundInput = document.getElementById("setting-open-background");
   const openNextInput = document.getElementById("setting-open-next");
   const openStandaloneWindowInput = document.getElementById("setting-open-standalone-window");
@@ -1788,15 +1789,39 @@ function bindEvents() {
       event.preventDefault();
       runGoogleAnySearch();
     });
+
+    googleAnyQueryInput.addEventListener("input", () => {
+      if (queryInput instanceof HTMLInputElement && queryInput.value !== googleAnyQueryInput.value) {
+        queryInput.value = googleAnyQueryInput.value;
+      }
+      updateQueryControls();
+      persistCurrentQuery().catch(() => undefined);
+    });
   }
 
   if (clearButton instanceof HTMLButtonElement && queryInput instanceof HTMLInputElement) {
     clearButton.addEventListener("click", (event) => {
       event.preventDefault();
       queryInput.value = "";
+      if (googleAnyQueryInput instanceof HTMLInputElement) {
+        googleAnyQueryInput.value = "";
+      }
       updateQueryControls();
       persistCurrentQuery().catch(() => undefined);
       queryInput.focus();
+    });
+  }
+
+  if (googleAnyClearButton instanceof HTMLButtonElement && googleAnyQueryInput instanceof HTMLInputElement) {
+    googleAnyClearButton.addEventListener("click", (event) => {
+      event.preventDefault();
+      googleAnyQueryInput.value = "";
+      if (queryInput instanceof HTMLInputElement) {
+        queryInput.value = "";
+      }
+      updateQueryControls();
+      persistCurrentQuery().catch(() => undefined);
+      googleAnyQueryInput.focus();
     });
   }
 
@@ -1974,6 +1999,7 @@ function bindEvents() {
       settings.googleAnyPlatform.mode = sanitizeGoogleAnyMode(target.value);
       queueAutosave();
       renderGoogleAnyView();
+      runGoogleAnySearch();
       return;
     }
 
@@ -2137,11 +2163,6 @@ function bindEvents() {
       }
       renderSettingsForm();
       setActiveView("settings");
-      return;
-    }
-
-    if (button.id === "google-any-run-inline") {
-      runGoogleAnySearch();
       return;
     }
 
