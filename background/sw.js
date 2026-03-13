@@ -15,17 +15,9 @@ function getQueryFromInfo(info) {
   return (info.selectionText || info.linkUrl || "").trim();
 }
 
-function shouldOpenToolbarInStandaloneWindow(settings) {
-  return Boolean(
-    settings
-    && settings.behavior
-    && settings.behavior.openToolbarInStandaloneWindow
-  );
-}
-
 async function applyToolbarActionMode(settings) {
-  const popup = shouldOpenToolbarInStandaloneWindow(settings) ? "" : COMMAND_CENTER_POPUP_PATH;
-  await chrome.action.setPopup({ popup });
+  void settings;
+  await chrome.action.setPopup({ popup: COMMAND_CENTER_POPUP_PATH });
 }
 
 async function openCommandCenterStandaloneWindow() {

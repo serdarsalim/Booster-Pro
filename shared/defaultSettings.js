@@ -114,8 +114,7 @@ export const DEFAULT_SETTINGS = {
   behavior: {
     openInBackground: true,
     openNextToCurrent: true,
-    darkMode: false,
-    openToolbarInStandaloneWindow: false
+    darkMode: false
   },
   googleAnyPlatform: {
     mode: GOOGLE_ANY_MODE.SEPARATE,
@@ -430,11 +429,7 @@ export function sanitizeSettings(rawSettings) {
     darkMode:
       settings.behavior && typeof settings.behavior.darkMode === "boolean"
         ? settings.behavior.darkMode
-        : DEFAULT_SETTINGS.behavior.darkMode,
-    openToolbarInStandaloneWindow:
-      settings.behavior && typeof settings.behavior.openToolbarInStandaloneWindow === "boolean"
-        ? settings.behavior.openToolbarInStandaloneWindow
-        : DEFAULT_SETTINGS.behavior.openToolbarInStandaloneWindow
+        : DEFAULT_SETTINGS.behavior.darkMode
   };
   const googleAnySources = getGoogleAnySources({
     customEngines,

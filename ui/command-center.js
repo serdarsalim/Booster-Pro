@@ -90,7 +90,7 @@ const CATEGORY_COLUMN_INDEX = Object.freeze({
 let settings = null;
 let autosaveTimer = null;
 let querySelectOnFocusArmed = true;
-let activeView = "menu";
+let activeView = "google-any";
 let editMode = false;
 let editDraft = null;
 let googleAnyKeywordEditMode = false;
@@ -213,13 +213,13 @@ function readPersistedTopTab() {
   return new Promise((resolve) => {
     chrome.storage.local.get([TOP_TAB_STORAGE_KEY], (result) => {
       if (chrome.runtime.lastError) {
-        resolve("menu");
+        resolve("google-any");
         return;
       }
       const raw = result && typeof result[TOP_TAB_STORAGE_KEY] === "string"
         ? result[TOP_TAB_STORAGE_KEY]
         : "";
-      resolve(raw === "google-any" ? "google-any" : "menu");
+      resolve(raw === "menu" ? "menu" : "google-any");
     });
   });
 }
@@ -456,9 +456,6 @@ function ensureSettingsShape(targetSettings) {
   if (typeof targetSettings.behavior.darkMode !== "boolean") {
     targetSettings.behavior.darkMode = DEFAULT_SETTINGS.behavior.darkMode;
   }
-  if (typeof targetSettings.behavior.openToolbarInStandaloneWindow !== "boolean") {
-    targetSettings.behavior.openToolbarInStandaloneWindow = DEFAULT_SETTINGS.behavior.openToolbarInStandaloneWindow;
-  }
 
   if (!targetSettings.engineLabelOverrides || typeof targetSettings.engineLabelOverrides !== "object") {
     targetSettings.engineLabelOverrides = {};
@@ -567,15 +564,11 @@ function renderSettingsForm() {
   ensureSettingsShape(settings);
   const openInBackgroundInput = document.getElementById("setting-open-background");
   const openNextInput = document.getElementById("setting-open-next");
-  const openStandaloneWindowInput = document.getElementById("setting-open-standalone-window");
   if (openInBackgroundInput instanceof HTMLInputElement) {
     openInBackgroundInput.checked = Boolean(settings.behavior.openInBackground);
   }
   if (openNextInput instanceof HTMLInputElement) {
     openNextInput.checked = Boolean(settings.behavior.openNextToCurrent);
-  }
-  if (openStandaloneWindowInput instanceof HTMLInputElement) {
-    openStandaloneWindowInput.checked = Boolean(settings.behavior.openToolbarInStandaloneWindow);
   }
 }
 
@@ -1757,7 +1750,6 @@ function bindEvents() {
   const googleAnyClearButton = document.getElementById("clear-google-any-query");
   const openInBackgroundInput = document.getElementById("setting-open-background");
   const openNextInput = document.getElementById("setting-open-next");
-  const openStandaloneWindowInput = document.getElementById("setting-open-standalone-window");
   const importFileInput = document.getElementById("import-engine-file");
 
   if (queryInput instanceof HTMLInputElement) {
@@ -1844,17 +1836,6 @@ function bindEvents() {
       }
       ensureSettingsShape(settings);
       settings.behavior.openNextToCurrent = openNextInput.checked;
-      queueAutosave();
-    });
-  }
-
-  if (openStandaloneWindowInput instanceof HTMLInputElement) {
-    openStandaloneWindowInput.addEventListener("change", () => {
-      if (!settings) {
-        return;
-      }
-      ensureSettingsShape(settings);
-      settings.behavior.openToolbarInStandaloneWindow = openStandaloneWindowInput.checked;
       queueAutosave();
     });
   }
